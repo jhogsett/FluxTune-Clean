@@ -3,6 +3,9 @@
 #ifdef CONFIG_FIVE_CW
 #define CQ_MESSAGE_FORMAT "CQ CQ DE %s %s K    "
 #endif
+#ifdef CONFIG_FILE_PILE_UP
+#define CQ_MESSAGE_FORMAT "BS77H BS77H DE %s %s K"
+#endif
 
 // Temporary debug output for resource testing - disabled after successful testing
 // #define DEBUG_STATION_RESOURCES

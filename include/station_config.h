@@ -20,7 +20,8 @@
 
 // ===== TEST CONFIGURATIONS =====
 // #define CONFIG_FOUR_CW          // Four CW/Morse stations for CW testing
-#define CONFIG_FIVE_CW          // Four CW/Morse stations for simulating Field Day traffic
+// #define CONFIG_FIVE_CW          // Four CW/Morse stations for simulating Field Day traffic
+#define CONFIG_FILE_PILE_UP     // Five CW/Morse stations simulating Scarborough Reef pile-up (BS77H variations)
 // #define CONFIG_FOUR_NUMBERS     // Four Numbers stations for spooky testing
 // #define CONFIG_FOUR_PAGER       // Four Pager stations for digital testing
 // #define CONFIG_FOUR_RTTY        // Four RTTY stations for RTTY testing
@@ -86,11 +87,11 @@
     // Other stations disabled for focused CW testing
 #endif
 
-#ifdef CONFIG_FIVE_CW_RESOURCE_TEST
-    // Test: Five CW stations with only 4 wave generators (resource contention test)
+#ifdef CONFIG_FILE_PILE_UP
+    // Test: Five CW stations simulating Scarborough Reef pile-up (BS77H variations)
     #define ENABLE_FOUR_CW_STATIONS
     #define ENABLE_MORSE_STATION
-    // Other stations disabled for focused resource testing
+    // Other stations disabled for focused CW testing
 #endif
 
 #ifdef CONFIG_FOUR_NUMBERS

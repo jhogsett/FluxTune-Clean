@@ -412,6 +412,60 @@ Realization *realizations[2] = {
 };
 #endif
 
+#ifdef CONFIG_FILE_PILE_UP
+// Five CW stations simulating Scarborough Reef pile-up - all calling BS77H
+// Each station has its own callsign but all are calling BS77H for a realistic pile-up
+// Different speeds and fist qualities to simulate various operators
+SimStation cw_station1(&wave_gen_pool, &signal_meter, 14002500.0, 28, 15);   // JA1ABC: Fast confident contest operator
+SimStation cw_station2(&wave_gen_pool, &signal_meter, 14002400.0, 22, 40);   // VK2DEF: Experienced DXer, slightly nervous
+SimStation cw_station3(&wave_gen_pool, &signal_meter, 14002600.0, 16, 80);   // W3GHI: General class, first big DX contact
+SimStation cw_station4(&wave_gen_pool, &signal_meter, 14002700.0, 25, 25);   // DL4JKL: European, good operator but tired
+SimStation cw_station5(&wave_gen_pool, &signal_meter, 14002300.0, 19, 60);   // VE5MNO: Canadian, rusty on CW but determined
+
+SimTransmitter *station_pool[5] = {
+    &cw_station1,
+    &cw_station2, 
+    &cw_station3,
+    &cw_station4,
+    &cw_station5
+};
+
+Realization *realizations[5] = {
+    &cw_station1,
+    &cw_station2,
+    &cw_station3,
+    &cw_station4,
+    &cw_station5
+};
+#endif
+
+#ifdef CONFIG_FIVE_CW_RESOURCE_TEST
+// Five CW stations with only 4 wave generators - resource contention test
+// Different frequencies spread across 40m band for easy identification
+// First 4 stations at 30 WPM for fast recycling, station 5 at 13 WPM for contrast
+SimStation cw_station1(&wave_gen_pool, &signal_meter, 7001000.0, 30, 10);   // Station 1: 30 WPM, slight fist variation
+SimStation cw_station2(&wave_gen_pool, &signal_meter, 7002000.0, 30, 20);   // Station 2: 30 WPM, moderate fist variation
+SimStation cw_station3(&wave_gen_pool, &signal_meter, 7003000.0, 30, 30);   // Station 3: 30 WPM, noticeable fist variation
+SimStation cw_station4(&wave_gen_pool, &signal_meter, 7004000.0, 30, 15);   // Station 4: 30 WPM, slight fist variation
+SimStation cw_station5(&wave_gen_pool, &signal_meter, 7005000.0, 13, 25);   // Station 5: 13 WPM, moderate fist variation
+
+SimTransmitter *station_pool[5] = {  // 5 stations but only 4 wave generators available
+    &cw_station1,
+    &cw_station2,
+    &cw_station3,
+    &cw_station4,
+    &cw_station5
+};
+
+Realization *realizations[5] = {  // 5 realizations competing for 4 resources
+    &cw_station1,
+    &cw_station2,
+    &cw_station3,
+    &cw_station4,
+    &cw_station5
+};
+#endif
+
 // ============================================================================
 // REALIZATION POOL - Initialize with configured realizations
 // ============================================================================
@@ -719,6 +773,25 @@ void loop()
 
 #ifdef CONFIG_FIVE_CW
 	// Initialize four CW test stations
+	cw_station1.begin(time + random(1000));
+	cw_station1.set_station_state(AUDIBLE);
+	
+	cw_station2.begin(time + random(2000));
+	cw_station2.set_station_state(AUDIBLE);
+	
+	cw_station3.begin(time + random(3000));
+	cw_station3.set_station_state(AUDIBLE);
+	
+	cw_station4.begin(time + random(4000));
+	cw_station4.set_station_state(AUDIBLE);
+
+	cw_station5.begin(time + random(5000));
+	cw_station5.set_station_state(AUDIBLE);
+#endif
+
+#ifdef CONFIG_FILE_PILE_UP
+	// Initialize five CW pile-up stations (all calling BS77H)
+	// Staggered start times to simulate realistic pile-up behavior
 	cw_station1.begin(time + random(1000));
 	cw_station1.set_station_state(AUDIBLE);
 	
