@@ -664,12 +664,13 @@ EventDispatcher * set_application(int application, HT16K33Disp *display){
 			title = (FSTR("Settings"));
 		break;	}
 	display->scroll_string(title, DISPLAY_SHOW_TIME, DISPLAY_SCROLL_TIME);
-	
-	// Mark hardware state as dirty when switching to SimRadio  
-	// This ensures audio resumes properly after application switches
-	if(application == APP_SIMRADIO) {
-		realization_pool.mark_dirty();
-	}
+
+	// we don't need this after removing the "Wave Gen" application that overtook the wave generators
+	// // Mark hardware state as dirty when switching to SimRadio  
+	// // This ensures audio resumes properly after application switches
+	// if(application == APP_SIMRADIO) {
+	// 	realization_pool.mark_dirty();
+	// }
 	
 	dispatcher->set_mode(display, 0);
 	

@@ -22,7 +22,7 @@
 // Device-specific scaling factors
 #ifdef DEVICE_VARIANT_RED_DISPLAY
     // Red display variant: LEDs are much brighter, scale down significantly
-    #define SIGNAL_METER_BRIGHTNESS_DIVISOR 4      // Divide by 5 for red display
+    #define SIGNAL_METER_BRIGHTNESS_DIVISOR 5      // Divide by 5 for red display
     #define PANEL_LED_BRIGHTNESS_DIVISOR 2         // Divide by 5 for red display
 #else    // Green display variant (default): Original brightness
     #define SIGNAL_METER_BRIGHTNESS_DIVISOR 1      // No scaling for green display
