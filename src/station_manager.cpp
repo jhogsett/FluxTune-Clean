@@ -314,6 +314,10 @@ void StationManager::reallocateStations(uint32_t vfo_freq) {
         
         // Recycle the station - it's safe to interrupt since we checked above
         stations[i]->reinitialize(millis(), new_freq);
+        
+        // Re-randomize station properties to make it feel like a completely new station
+        stations[i]->randomize();
+        
         stations_moved++;
         
         #ifdef DEBUG_PIPELINING

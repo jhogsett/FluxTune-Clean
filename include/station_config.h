@@ -8,7 +8,7 @@
 // Choose ONE configuration mode by uncommenting it
 
 // ===== PRODUCTION CONFIGURATION =====
-#define CONFIG_MIXED_STATIONS    // Default: All different station types
+// #define CONFIG_MIXED_STATIONS    // Default: All different station types
 
 // ===== DEVELOPMENT CONFIGURATION =====  
 // #define CONFIG_DEV_LOW_RAM       // Development: Minimal RAM usage for development work
@@ -20,7 +20,7 @@
 
 // ===== TEST CONFIGURATIONS =====
 // #define CONFIG_FOUR_CW          // Four CW/Morse stations for CW testing
-// #define CONFIG_FIVE_CW          // Four CW/Morse stations for simulating Field Day traffic
+#define CONFIG_FIVE_CW          // Four CW/Morse stations for simulating Field Day traffic
 // #define CONFIG_FILE_PILE_UP     // Five CW/Morse stations simulating Scarborough Reef pile-up (BS77H variations)
 // #define CONFIG_FOUR_NUMBERS     // Four Numbers stations for spooky testing
 // #define CONFIG_FOUR_PAGER       // Four Pager stations for digital testing

@@ -25,6 +25,7 @@ public:
 
     void realize();
     void apply_wpm_drift();         // Add slight WPM drift for realism
+    virtual void randomize() override;  // Re-randomize callsign, WPM, and fist quality
     
     // Set station into retry state (used when initialization fails)
     void set_retry_state(unsigned long next_try_time);
