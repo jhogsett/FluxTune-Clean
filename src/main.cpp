@@ -50,6 +50,9 @@
 #ifdef ENABLE_JAMMER_STATION
 #include "sim_jammer.h"
 #endif
+#ifdef ENABLE_TEST_STATION
+#include "sim_test.h"
+#endif
 
 #include "async_morse.h"
 
@@ -393,22 +396,31 @@ SimStation cw_station1(&wave_gen_pool, &signal_meter, 7002000.0, 11);
 #ifdef ENABLE_NUMBERS_STATION
 SimNumbers numbers_station1(&wave_gen_pool, &signal_meter, 7002700.0, 18);
 #endif
+#ifdef ENABLE_TEST_STATION
+SimTest test_station(&wave_gen_pool, &signal_meter, 7005000.0, 10.0, 440.0, 560.0);  // 10 Hz toggle, 440 Hz and 560 Hz tones
+#endif
 
-SimTransmitter *station_pool[2] = {
+SimTransmitter *station_pool[3] = {
 #ifdef ENABLE_MORSE_STATION
     &cw_station1,
 #endif
 #ifdef ENABLE_NUMBERS_STATION
-    &numbers_station1
+    &numbers_station1,
+#endif
+#ifdef ENABLE_TEST_STATION
+    &test_station
 #endif
 };
 
-Realization *realizations[2] = {
+Realization *realizations[3] = {
 #ifdef ENABLE_MORSE_STATION
     &cw_station1,
 #endif
 #ifdef ENABLE_NUMBERS_STATION
-    &numbers_station1
+    &numbers_station1,
+#endif
+#ifdef ENABLE_TEST_STATION
+    &test_station
 #endif
 };
 #endif
@@ -468,6 +480,19 @@ Realization *realizations[5] = {  // 5 realizations competing for 4 resources
 };
 #endif
 
+#ifdef CONFIG_TEST_PERFORMANCE
+// Performance test: Single test station cycling between two frequencies as fast as possible
+SimTest test_station(&wave_gen_pool, &signal_meter, 7002000.0, 1000.0);  // Base at 7.002 MHz, +/- 1 kHz
+
+SimTransmitter *station_pool[1] = {
+    &test_station
+};
+
+Realization *realizations[1] = {
+    &test_station
+};
+#endif
+
 // ============================================================================
 // REALIZATION POOL - Initialize with configured realizations
 // ============================================================================
@@ -475,8 +500,10 @@ Realization *realizations[5] = {  // 5 realizations competing for 4 resources
 // Realization status array - sized based on configuration
 #ifdef CONFIG_MINIMAL_CW
 bool realization_stats[1] = {false};
+#elif defined(CONFIG_TEST_PERFORMANCE)
+bool realization_stats[1] = {false};  // Single test station
 #elif defined(CONFIG_DEV_LOW_RAM)
-bool realization_stats[2] = {false, false};
+bool realization_stats[3] = {false, false, false};
 #elif defined(CONFIG_FIVE_CW_RESOURCE_TEST)
 bool realization_stats[5] = {false, false, false, false, false};  // 5 stations for resource test
 #elif defined(CONFIG_FILE_PILE_UP)
@@ -488,7 +515,7 @@ bool realization_stats[4] = {false, false, false, false};
 #ifdef CONFIG_MINIMAL_CW
 RealizationPool realization_pool(realizations, realization_stats, 1);  // Only 1 station for minimal config
 #elif defined(CONFIG_DEV_LOW_RAM)
-RealizationPool realization_pool(realizations, realization_stats, 2);  // Only 2 stations for development config
+RealizationPool realization_pool(realizations, realization_stats, 3);  // 3 stations for development config
 #elif defined(CONFIG_FIVE_CW_RESOURCE_TEST)
 RealizationPool realization_pool(realizations, realization_stats, 5);  // 5 stations competing for 4 wave generators
 #elif defined(CONFIG_FILE_PILE_UP)
@@ -843,6 +870,12 @@ void loop()
 	// cw_station5.set_station_state(AUDIBLE);
 #endif
 
+#ifdef CONFIG_TEST_PERFORMANCE
+	// Initialize test performance station
+	test_station.begin(time + random(1000));
+	test_station.set_station_state(AUDIBLE);
+#endif
+
 #ifdef CONFIG_FOUR_NUMBERS
 	// Initialize four Numbers test stations
 	numbers_station1.begin(time + random(1000));
@@ -920,6 +953,11 @@ void loop()
 	numbers_station1.begin(time + random(1000));
 	numbers_station1.set_station_state(AUDIBLE);
 #endif
+
+#ifdef ENABLE_TEST_STATION
+	test_station.begin(time + random(1000));
+	test_station.set_station_state(AUDIBLE);
+#endif
 #endif
 	set_application(APP_SIMRADIO, &display);
 
@@ -940,7 +978,11 @@ void loop()
 			}
 		}
 
-        // --- PANEL LOCK LED OVERRIDE ---
+#ifdef CONFIG_TEST_PERFORMANCE
+		// Test station runs automatically - just listen to the audio output
+		// to determine loop performance and upper limits for station design
+#endif
+		// --- PANEL LOCK LED OVERRIDE ---
         int lock_brightness = signal_meter.get_panel_led_brightness();
         if (lock_brightness > 0) {
             int pwm = (lock_brightness * PANEL_LOCK_LED_FULL_BRIGHTNESS) / (255 * PANEL_LED_BRIGHTNESS_DIVISOR);

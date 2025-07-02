@@ -11,7 +11,7 @@
 // #define CONFIG_MIXED_STATIONS    // Default: All different station types
 
 // ===== DEVELOPMENT CONFIGURATION =====  
-// #define CONFIG_DEV_LOW_RAM       // Development: Minimal RAM usage for development work
+#define CONFIG_DEV_LOW_RAM       // Development: Minimal RAM usage for development work
                                  // SAVES ~191 BYTES RAM: Disables RTTY and Pager stations
                                  // Use this for dynamic station pipelining development
 
@@ -20,7 +20,8 @@
 
 // ===== TEST CONFIGURATIONS =====
 // #define CONFIG_FOUR_CW          // Four CW/Morse stations for CW testing
-#define CONFIG_FIVE_CW          // Four CW/Morse stations for simulating Field Day traffic
+// #define CONFIG_FIVE_CW          // Four CW/Morse stations for simulating Field Day traffic
+// #define CONFIG_TEST_PERFORMANCE  // Single test station for measuring main loop performance
 // #define CONFIG_FILE_PILE_UP     // Five CW/Morse stations simulating Scarborough Reef pile-up (BS77H variations)
 // #define CONFIG_FOUR_NUMBERS     // Four Numbers stations for spooky testing
 // #define CONFIG_FOUR_PAGER       // Four Pager stations for digital testing
@@ -68,6 +69,7 @@
     // Development: Optimized for low RAM usage during development
     #define ENABLE_MORSE_STATION    // Basic CW/Morse station (SimStation) - essential for testing
     #define ENABLE_NUMBERS_STATION  // Numbers Station (SimNumbers) - moderate RAM usage
+    #define ENABLE_TEST_STATION     // Test Station (SimTest) - for loop performance testing
     // #define ENABLE_PAGER_STATION    // Pager Station (SimPager) - disabled to save RAM
     // #define ENABLE_RTTY_STATION     // RTTY Station (SimRTTY) - disabled to save RAM 
     // #define ENABLE_JAMMER_STATION   // Jammer Station (SimJammer) - disabled to save RAM
@@ -133,6 +135,12 @@
     #define ENABLE_CW_CLUSTER_STATIONS
     #define ENABLE_MORSE_STATION
     // Other stations disabled for focused CW listening
+#endif
+
+#ifdef CONFIG_TEST_PERFORMANCE
+    // Performance testing: Single test station for measuring main loop speed
+    #define ENABLE_TEST_STATION
+    // All other stations disabled for clean performance measurement
 #endif
 
 #endif // STATION_CONFIG_H
