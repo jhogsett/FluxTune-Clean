@@ -3,7 +3,7 @@ Arduino Based Artificial Radio with Dynamic Station Pipelining
 
 ![20250627_170014](https://github.com/user-attachments/assets/2380802a-ff7f-4b7a-a04b-0e40f170705c)
 
-https://youtube.com/shorts/2PkQ_C-Jvhc
+[![Watch the video](https://img.youtube.com/vi/2PkQ_C-Jvhc/maxresdefault.jpg)](https://youtube.com/shorts/2PkQ_C-Jvhc)
 
 ## Features
 
