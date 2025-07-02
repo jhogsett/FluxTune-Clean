@@ -1,4 +1,5 @@
 #include "station_config.h"
+
 #include <Arduino.h>
 #include <Wire.h>
 #include <MD_AD9833.h>
@@ -413,29 +414,30 @@ Realization *realizations[2] = {
 #endif
 
 #ifdef CONFIG_FILE_PILE_UP
-// Five CW stations simulating Scarborough Reef pile-up - all calling BS77H
-// Each station has its own callsign but all are calling BS77H for a realistic pile-up
+// Five CW stations simulating pile-up activity on 40m
+// Each station has its own callsign but all are calling for a realistic pile-up
 // Different speeds and fist qualities to simulate various operators
-SimStation cw_station1(&wave_gen_pool, &signal_meter, 14002500.0, 28, 15);   // JA1ABC: Fast confident contest operator
-SimStation cw_station2(&wave_gen_pool, &signal_meter, 14002400.0, 22, 40);   // VK2DEF: Experienced DXer, slightly nervous
-SimStation cw_station3(&wave_gen_pool, &signal_meter, 14002600.0, 16, 80);   // W3GHI: General class, first big DX contact
-SimStation cw_station4(&wave_gen_pool, &signal_meter, 14002700.0, 25, 25);   // DL4JKL: European, good operator but tired
-SimStation cw_station5(&wave_gen_pool, &signal_meter, 14002300.0, 19, 60);   // VE5MNO: Canadian, rusty on CW but determined
+// Frequencies spaced 1 kHz apart around 7.002 MHz for pipelining testing
+SimStation cw_station1(&wave_gen_pool, &signal_meter, 7002500.0, 28, 15);   // JA1ABC: Fast confident contest operator
+SimStation cw_station2(&wave_gen_pool, &signal_meter, 7001500.0, 22, 40);   // VK2DEF: Experienced DXer, slightly nervous  
+SimStation cw_station3(&wave_gen_pool, &signal_meter, 7003500.0, 16, 80);   // W3GHI: General class, first big DX contact
+// SimStation cw_station4(&wave_gen_pool, &signal_meter, 7004500.0, 25, 25);   // DL4JKL: European, good operator but tired
+// SimStation cw_station5(&wave_gen_pool, &signal_meter, 7000500.0, 19, 60);   // VE5MNO: Canadian, rusty on CW but determined
 
-SimTransmitter *station_pool[5] = {
+SimTransmitter *station_pool[3] = {
     &cw_station1,
     &cw_station2, 
-    &cw_station3,
-    &cw_station4,
-    &cw_station5
+    &cw_station3
+    // &cw_station4,
+    // &cw_station5
 };
 
-Realization *realizations[5] = {
+Realization *realizations[3] = {
     &cw_station1,
     &cw_station2,
-    &cw_station3,
-    &cw_station4,
-    &cw_station5
+    &cw_station3
+    // &cw_station4,
+    // &cw_station5
 };
 #endif
 
@@ -477,6 +479,8 @@ bool realization_stats[1] = {false};
 bool realization_stats[2] = {false, false};
 #elif defined(CONFIG_FIVE_CW_RESOURCE_TEST)
 bool realization_stats[5] = {false, false, false, false, false};  // 5 stations for resource test
+#elif defined(CONFIG_FILE_PILE_UP)
+bool realization_stats[3] = {false, false, false};  // 3 stations for pile-up debug
 #else
 bool realization_stats[4] = {false, false, false, false};
 #endif
@@ -487,6 +491,8 @@ RealizationPool realization_pool(realizations, realization_stats, 1);  // Only 1
 RealizationPool realization_pool(realizations, realization_stats, 2);  // Only 2 stations for development config
 #elif defined(CONFIG_FIVE_CW_RESOURCE_TEST)
 RealizationPool realization_pool(realizations, realization_stats, 5);  // 5 stations competing for 4 wave generators
+#elif defined(CONFIG_FILE_PILE_UP)
+RealizationPool realization_pool(realizations, realization_stats, 3);  // 3 stations for pile-up debug
 #else
 RealizationPool realization_pool(realizations, realization_stats, 4);  // 4 stations for all other configs
 #endif
@@ -592,8 +598,9 @@ void setup(){
 	AD4.setFrequency((MD_AD9833::channel_t)1, 0.1);
 	AD4.setMode(MD_AD9833::MODE_SINE);
 
-	// Initialize StationManager
-	station_manager.updateStations(7000000);
+	// Initialize StationManager with dynamic pipelining
+	station_manager.enableDynamicPipelining(true);
+	station_manager.setupPipeline(7000000); // Start with VFO A frequency
 }
 
 #ifdef ENABLE_BRANDING_MODE
@@ -752,8 +759,8 @@ void loop()
 	cw_station3.begin(time + random(3000));
 	cw_station3.set_station_state(AUDIBLE);
 	
-	cw_station4.begin(time + random(4000));
-	cw_station4.set_station_state(AUDIBLE);
+	// cw_station4.begin(time + random(4000));
+	// cw_station4.set_station_state(AUDIBLE);
 #endif
 
 #ifdef CONFIG_FOUR_CW
@@ -767,8 +774,8 @@ void loop()
 	cw_station3.begin(time + random(3000));
 	cw_station3.set_station_state(AUDIBLE);
 	
-	cw_station4.begin(time + random(4000));
-	cw_station4.set_station_state(AUDIBLE);
+	// cw_station4.begin(time + random(4000));
+	// cw_station4.set_station_state(AUDIBLE);
 #endif
 
 #ifdef CONFIG_FIVE_CW
@@ -782,30 +789,34 @@ void loop()
 	cw_station3.begin(time + random(3000));
 	cw_station3.set_station_state(AUDIBLE);
 	
-	cw_station4.begin(time + random(4000));
-	cw_station4.set_station_state(AUDIBLE);
+	// cw_station4.begin(time + random(4000));
+	// cw_station4.set_station_state(AUDIBLE);
 
-	cw_station5.begin(time + random(5000));
-	cw_station5.set_station_state(AUDIBLE);
+	// cw_station5.begin(time + random(5000));
+	// cw_station5.set_station_state(AUDIBLE);
 #endif
 
 #ifdef CONFIG_FILE_PILE_UP
 	// Initialize five CW pile-up stations (all calling BS77H)
 	// Staggered start times to simulate realistic pile-up behavior
-	cw_station1.begin(time + random(1000));
-	cw_station1.set_station_state(AUDIBLE);
-	
-	cw_station2.begin(time + random(2000));
-	cw_station2.set_station_state(AUDIBLE);
-	
-	cw_station3.begin(time + random(3000));
-	cw_station3.set_station_state(AUDIBLE);
-	
-	cw_station4.begin(time + random(4000));
-	cw_station4.set_station_state(AUDIBLE);
+	// NOTE: Skip manual initialization when dynamic pipelining is enabled
+	if (!station_manager.isDynamicPipeliningEnabled()) {
+		cw_station1.begin(time + random(1000));
+		cw_station1.set_station_state(AUDIBLE);
+		
+		cw_station2.begin(time + random(2000));
+		cw_station2.set_station_state(AUDIBLE);
+		
+		cw_station3.begin(time + random(3000));
+		cw_station3.set_station_state(AUDIBLE);
+		
+		// cw_station4.begin(time + random(4000));
+		// cw_station4.set_station_state(AUDIBLE);
 
-	cw_station5.begin(time + random(5000));
-	cw_station5.set_station_state(AUDIBLE);
+		// cw_station5.begin(time + random(5000));
+		// cw_station5.set_station_state(AUDIBLE);
+	}
+	// When dynamic pipelining is enabled, stations are initialized by setupPipeline()
 #endif
 
 #ifdef CONFIG_FIVE_CW_RESOURCE_TEST
@@ -821,14 +832,14 @@ void loop()
 	cw_station3.begin(time + random(2000));
 	cw_station3.set_station_state(AUDIBLE);
 	
-	cw_station4.begin(time + random(2000));
-	cw_station4.set_station_state(AUDIBLE);
+	// cw_station4.begin(time + random(2000));
+	// cw_station4.set_station_state(AUDIBLE);
 	
-	if(!cw_station5.begin(time + random(2000))) {  // Check if begin() succeeds
-		// If begin() fails, put station in retry state so it will try again during runtime
-		cw_station5.set_retry_state(time + 1000);  // Retry in 1 second
-	}
-	cw_station5.set_station_state(AUDIBLE);
+	// if(!cw_station5.begin(time + random(2000))) {  // Check if begin() succeeds
+	//	// If begin() fails, put station in retry state so it will try again during runtime
+	//	cw_station5.set_retry_state(time + 1000);  // Retry in 1 second
+	// }
+	// cw_station5.set_station_state(AUDIBLE);
 #endif
 
 #ifdef CONFIG_FOUR_NUMBERS
@@ -915,8 +926,18 @@ void loop()
 		unsigned long time = millis();
 				// Update signal meter decay (capacitor-like discharge)
 		signal_meter.update(time);
-				// Test StationManager call in main loop (safe location)
-		station_manager.updateStations(7000000);
+		
+		// Update StationManager with current VFO frequency
+		// Only update when in VFO mode (dispatcher1)
+		if (dispatcher == &dispatcher1) {
+			Mode* current_mode = dispatcher->get_current_mode();
+			if (current_mode) {
+				// We know this is a VFO since we're in dispatcher1
+				// Use static_cast since we've verified the type through dispatcher check
+				VFO* current_vfo = static_cast<VFO*>(current_mode);
+				station_manager.updateStations(current_vfo->_frequency);
+			}
+		}
 
         // --- PANEL LOCK LED OVERRIDE ---
         int lock_brightness = signal_meter.get_panel_led_brightness();
@@ -971,6 +992,16 @@ void loop()
 		// Process encoder events only when not showing title (to prevent missed events)
 		if (!dispatcher->is_showing_title()) {
 			if(encoderA_changed){
+				#ifdef DEBUG_PIPELINING
+				// Minimal tuning debug - only show frequency changes
+				Mode* current_mode = dispatcher->get_current_mode();
+				if (current_mode && dispatcher == &dispatcher1) {
+					VFO* current_vfo = static_cast<VFO*>(current_mode);
+					Serial.print("VFO: ");
+					Serial.println(current_vfo->_frequency);
+				}
+				#endif
+				
 				dispatcher->dispatch_event(&display, ID_ENCODER_TUNING, encoder_handlerA.diff(), 0);
 				dispatcher->update_display(&display);
 				dispatcher->update_signal_meter(&signal_meter);

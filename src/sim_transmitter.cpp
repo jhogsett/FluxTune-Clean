@@ -94,10 +94,13 @@ bool SimTransmitter::reinitialize(unsigned long time, float fixed_freq)
     _active = false;
     _station_state = ACTIVE;  // Station is now active at new frequency
     
+    // Start the station with the new frequency
+    bool success = begin(time);
+    
     // Subclasses should override this method to reinitialize their specific content
     // (e.g., new morse messages, different WPM, new pager content, etc.)
     
-    return true;
+    return success;
 }
 
 void SimTransmitter::set_station_state(StationState new_state)
