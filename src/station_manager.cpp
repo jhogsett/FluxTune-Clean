@@ -1,6 +1,5 @@
 #include "station_manager.h"
 #include "sim_numbers.h" // Example concrete station type
-#include "seeding.h"     // For randomizer
 
 StationManager::StationManager(SimTransmitter* station_ptrs[MAX_STATIONS]) {
     for (int i = 0; i < MAX_STATIONS; ++i) {
@@ -17,7 +16,6 @@ StationManager::StationManager(SimTransmitter* station_ptrs[MAX_STATIONS]) {
     last_vfo_freq = 0;
     pipeline_center_freq = 0;
     tuning_direction = 0;
-    last_update_time = 0;
     last_tuning_time = 0;
 }
 
@@ -116,7 +114,6 @@ void StationManager::enableDynamicPipelining(bool enable) {
         tuning_direction = 0;
         last_vfo_freq = 0;
         pipeline_center_freq = 0;
-        last_update_time = 0;
         last_tuning_time = 0;
     }
 }
@@ -159,7 +156,7 @@ void StationManager::updatePipeline(uint32_t vfo_freq) {
     
     // Check if VFO frequency has changed significantly
     int32_t freq_change = (int32_t)(vfo_freq - last_vfo_freq);
-    bool significant_change = abs(freq_change) >= 100; // Lower threshold: 100 Hz instead of 1.25 kHz
+    bool significant_change = abs(freq_change) >= PIPELINE_TUNE_DETECT_THRESHOLD;
     
     if (significant_change) {
         // Update tuning direction and timing
@@ -173,7 +170,7 @@ void StationManager::updatePipeline(uint32_t vfo_freq) {
         
         // Update pipeline center frequency with hysteresis
         int32_t center_shift = (int32_t)(vfo_freq - pipeline_center_freq);
-        if (abs(center_shift) >= 1000) { // Lower threshold: 1 kHz instead of 3 kHz
+        if (abs(center_shift) >= PIPELINE_REALLOC_THRESHOLD) {
             // Reduce time between reallocations for more responsive pipelining
             static unsigned long last_realloc_time = 0;
             if (current_time - last_realloc_time > 200) { // 200ms instead of 500ms

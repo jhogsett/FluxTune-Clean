@@ -789,11 +789,11 @@ void loop()
 	cw_station3.begin(time + random(3000));
 	cw_station3.set_station_state(AUDIBLE);
 	
-	// cw_station4.begin(time + random(4000));
-	// cw_station4.set_station_state(AUDIBLE);
+	cw_station4.begin(time + random(4000));
+	cw_station4.set_station_state(AUDIBLE);
 
-	// cw_station5.begin(time + random(5000));
-	// cw_station5.set_station_state(AUDIBLE);
+	cw_station5.begin(time + random(5000));
+	cw_station5.set_station_state(AUDIBLE);
 #endif
 
 #ifdef CONFIG_FILE_PILE_UP

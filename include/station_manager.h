@@ -15,6 +15,7 @@
 #define PIPELINE_STATION_SPACING 5000    // Minimum 5 kHz between stations
 #define PIPELINE_AUDIBLE_RANGE 5000      // Range where stations become audible
 #define PIPELINE_REALLOC_THRESHOLD 3000  // Reallocate when VFO moves 3 kHz
+#define PIPELINE_TUNE_DETECT_THRESHOLD 100  // Minimum Hz change to detect tuning activity
 
 class StationManager {
 public:
@@ -45,7 +46,6 @@ private:
     uint32_t last_vfo_freq;
     uint32_t pipeline_center_freq;
     int tuning_direction; // -1 = down, 0 = stopped, 1 = up
-    unsigned long last_update_time;
     unsigned long last_tuning_time; // Last time VFO frequency changed significantly
     
     // Private methods
@@ -53,7 +53,6 @@ private:
     void deactivateStation(int idx);
     int findDormantStation();
     void reallocateStations(uint32_t vfo_freq);
-    uint32_t generateStationFrequency(uint32_t center_freq, int offset_index);
     void updateStationStates(uint32_t vfo_freq);
     int calculateTuningDirection(uint32_t current_freq, uint32_t last_freq);
     bool canInterruptStation(int station_idx, uint32_t vfo_freq) const;
