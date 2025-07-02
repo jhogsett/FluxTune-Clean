@@ -4,8 +4,18 @@
 #include "sim_transmitter.h"
 #include <stdint.h>
 
-#define MAX_STATIONS 6
+#define MAX_STATIONS 3
 #define MAX_AD9833 4
+
+// Debug control - disabled for production
+// #define DEBUG_PIPELINING  // Enable for troubleshooting pipelining issues
+
+// Dynamic pipelining configuration
+#define PIPELINE_LOOKAHEAD_RANGE 5000    // 5 kHz ahead/behind VFO - very aggressive for testing
+#define PIPELINE_STATION_SPACING 5000    // Minimum 5 kHz between stations
+#define PIPELINE_AUDIBLE_RANGE 5000      // Range where stations become audible
+#define PIPELINE_REALLOC_THRESHOLD 3000  // Reallocate when VFO moves 3 kHz
+#define PIPELINE_TUNE_DETECT_THRESHOLD 100  // Minimum Hz change to detect tuning activity
 
 class StationManager {
 public:
@@ -15,13 +25,37 @@ public:
     void recycleDormantStations(uint32_t vfo_freq);
     SimTransmitter* getStation(int idx);
     int getActiveStationCount() const;
-
+    
+    // Dynamic pipelining methods
+    void enableDynamicPipelining(bool enable = true);
+    void setupPipeline(uint32_t vfo_freq);
+    void updatePipeline(uint32_t vfo_freq);
+    
+    // Runtime configuration methods
+    bool isDynamicPipeliningEnabled() const { return pipeline_enabled; }
+    bool isPipelinePaused() const { return pipeline_enabled && tuning_direction == 0; }
+    int getTuningDirection() const { return tuning_direction; }
+    uint32_t getPipelineCenterFreq() const { return pipeline_center_freq; }
+    
 private:
     SimTransmitter* stations[MAX_STATIONS];
     int ad9833_assignment[MAX_AD9833]; // Maps AD9833 channels to station indices
+    
+    // Dynamic pipelining state
+    bool pipeline_enabled;
+    uint32_t last_vfo_freq;
+    uint32_t pipeline_center_freq;
+    int tuning_direction; // -1 = down, 0 = stopped, 1 = up
+    unsigned long last_tuning_time; // Last time VFO frequency changed significantly
+    
+    // Private methods
     void activateStation(int idx, uint32_t freq);
     void deactivateStation(int idx);
     int findDormantStation();
+    void reallocateStations(uint32_t vfo_freq);
+    void updateStationStates(uint32_t vfo_freq);
+    int calculateTuningDirection(uint32_t current_freq, uint32_t last_freq);
+    bool canInterruptStation(int station_idx, uint32_t vfo_freq) const;
 };
 
 #endif // STATION_MANAGER_H
