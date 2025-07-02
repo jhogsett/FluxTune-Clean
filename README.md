@@ -1,7 +1,7 @@
 # FluxTune
 Arduino Based Artificial Radio with Dynamic Station Pipelining
 
-![20250624_144336(1)](https://github.com/user-attachments/assets/a3883e58-d091-49f9-a104-2a4143bb5c5b)
+![20250627_170014](https://github.com/user-attachments/assets/2380802a-ff7f-4b7a-a04b-0e40f170705c)
 
 ## Features
 
