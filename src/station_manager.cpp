@@ -300,11 +300,13 @@ void StationManager::reallocateStations(uint32_t vfo_freq) {
         uint32_t new_freq;
         
         if (tuning_direction > 0) {
-            // Tuning up - move stations just ahead of VFO (much closer)
-            new_freq = vfo_freq + 2000 + (stations_moved * 1000); // Only 2-6 kHz ahead
+            // Tuning up - move stations ahead of VFO (higher frequencies)
+            new_freq = vfo_freq + 2000 + (stations_moved * 1000); // 2-6 kHz ahead
         } else {
-            // Tuning down - move stations just behind VFO  
-            new_freq = vfo_freq - 2000 - (stations_moved * 1000); // Only 2-6 kHz behind
+            // Tuning down - place stations BELOW VFO so they can be dialed into
+            // As VFO frequency decreases (tuning down), user will eventually tune into these stations
+            // Place them 5.7-7.2 kHz below VFO so they start inaudible but become audible as user tunes down
+            new_freq = vfo_freq - 5700 - (stations_moved * 500); // 5.7-7.2 kHz behind (below VFO)
         }
         
         // Ensure we don't go below minimum frequency
@@ -312,6 +314,10 @@ void StationManager::reallocateStations(uint32_t vfo_freq) {
         
         // Recycle the station - it's safe to interrupt since we checked above
         stations[i]->reinitialize(millis(), new_freq);
+        
+        // Re-randomize station properties to make it feel like a completely new station
+        stations[i]->randomize();
+        
         stations_moved++;
         
         #ifdef DEBUG_PIPELINING
@@ -329,26 +335,43 @@ void StationManager::updateStationStates(uint32_t vfo_freq) {
         if (!stations[i]->isActive()) continue; // Skip inactive stations
         
         uint32_t station_freq = (uint32_t)stations[i]->get_fixed_frequency();
-        int32_t freq_diff = abs((int32_t)(station_freq - vfo_freq));
+        int32_t signed_freq_diff = (int32_t)(station_freq - vfo_freq);
+        uint32_t abs_freq_diff = abs(signed_freq_diff);
         
         StationState current_state = stations[i]->get_station_state();
         
-        if (freq_diff <= PIPELINE_AUDIBLE_RANGE) {
+        if (abs_freq_diff <= PIPELINE_AUDIBLE_RANGE) {
             // Station is close enough to be potentially audible
             if (current_state == DORMANT) {
                 stations[i]->set_station_state(ACTIVE);
             }
             // Don't downgrade AUDIBLE or SILENT stations - let allocateAD9833() handle that
-        } else if (freq_diff > PIPELINE_LOOKAHEAD_RANGE) {
-            // Station is very far away - mark as dormant to save resources
-            if (current_state != DORMANT) {
-                stations[i]->set_station_state(DORMANT);
+        } else {
+            // Use asymmetric lookahead ranges based on current tuning direction
+            uint32_t effective_lookahead_range;
+            
+            if (tuning_direction > 0) {
+                // Tuning up - use standard range for stations above VFO, smaller for below
+                effective_lookahead_range = (signed_freq_diff > 0) ? PIPELINE_LOOKAHEAD_RANGE : PIPELINE_LOOKAHEAD_RANGE / 2;
+            } else if (tuning_direction < 0) {
+                // Tuning down - use larger range for stations below VFO, smaller for above
+                effective_lookahead_range = (signed_freq_diff < 0) ? 8000 : PIPELINE_LOOKAHEAD_RANGE / 2; // 8kHz for stations below when tuning down
+            } else {
+                // Not tuning - use symmetric range
+                effective_lookahead_range = PIPELINE_LOOKAHEAD_RANGE;
             }
-        }
-        // Stations between AUDIBLE_RANGE and LOOKAHEAD_RANGE stay in their current state
-        // unless they're DORMANT, in which case they become ACTIVE
-        else if (current_state == DORMANT) {
-            stations[i]->set_station_state(ACTIVE);
+            
+            if (abs_freq_diff > effective_lookahead_range) {
+                // Station is very far away - mark as dormant to save resources
+                if (current_state != DORMANT) {
+                    stations[i]->set_station_state(DORMANT);
+                }
+            }
+            // Stations between AUDIBLE_RANGE and effective_lookahead_range stay in their current state
+            // unless they're DORMANT, in which case they become ACTIVE
+            else if (current_state == DORMANT) {
+                stations[i]->set_station_state(ACTIVE);
+            }
         }
     }
 }

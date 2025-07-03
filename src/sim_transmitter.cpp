@@ -103,6 +103,13 @@ bool SimTransmitter::reinitialize(unsigned long time, float fixed_freq)
     return success;
 }
 
+void SimTransmitter::randomize()
+{
+    // Default implementation: no randomization
+    // Subclasses should override this to randomize their specific properties
+    // (e.g., callsigns, WPM, fist quality, message content, etc.)
+}
+
 void SimTransmitter::set_station_state(StationState new_state)
 {
     StationState old_state = _station_state;

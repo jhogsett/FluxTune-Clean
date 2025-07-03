@@ -44,6 +44,7 @@ public:
 
     // Dynamic station management methods
     virtual bool reinitialize(unsigned long time, float fixed_freq);  // Reinitialize with new frequency
+    virtual void randomize();  // Re-randomize station properties (callsign, WPM, etc.) - default implementation does nothing
     void set_station_state(StationState new_state);  // Change station state
     StationState get_station_state() const;  // Get current station state
     bool is_audible() const;  // True if station has AD9833 generator assigned

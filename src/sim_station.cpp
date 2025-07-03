@@ -7,7 +7,7 @@
 #define CQ_MESSAGE_FORMAT "BS77H BS77H DE %s %s K"
 #endif
 
-// Temporary debug output for resource testing - disabled after successful testing
+// Temporary debug output for resource testing - disable for production to save memory
 // #define DEBUG_STATION_RESOURCES
 
 #include "vfo.h"
@@ -327,4 +327,40 @@ void SimStation::apply_wpm_drift()
     _stored_wpm = _base_wpm + drift;
     if (_stored_wpm < 8) _stored_wpm = 8;
     if (_stored_wpm > 25) _stored_wpm = 25;
+}
+
+void SimStation::randomize()
+{
+    // Re-randomize station properties for realistic relocation behavior
+    
+    // Generate a new random callsign
+    generate_cq_message();  // This internally calls generate_random_callsign()
+    
+    // Randomize WPM with a full range for relocated stations (8-25 WPM)
+#ifdef PLATFORM_NATIVE
+    int new_wpm = 8 + (rand() % 18);  // 8-25 WPM range
+#else
+    int new_wpm = random(8, 26);  // 8-25 WPM range
+#endif
+    
+    _base_wpm = new_wpm;
+    _stored_wpm = new_wpm;
+    
+    // Randomize fist quality (if AsyncMorse supports it)
+    // Note: This would require checking if AsyncMorse has a setFistQuality method
+    // For now, fist quality is set during construction and would need AsyncMorse extension
+    
+    // Reset cycle counters to make station behavior feel fresh
+    _cycles_completed = 0;
+    
+    // Set a new random frustration threshold (cycles until QSY)
+#ifdef PLATFORM_NATIVE
+    _cycles_until_qsy = 3 + (rand() % 8);  // 3-10 cycles before getting frustrated
+#else
+    _cycles_until_qsy = random(3, 11);  // 3-10 cycles before getting frustrated
+#endif
+    
+    // Reset timing state
+    _in_wait_delay = false;
+    _next_cq_time = 0;  // Will be set properly on next cycle
 }
