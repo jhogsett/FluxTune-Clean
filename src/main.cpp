@@ -230,10 +230,10 @@ Realization *realizations[4] = {
 #ifdef CONFIG_FIVE_CW
 // Four CW stations with different speeds and realistic fist qualities for Field Day
 SimStation cw_station1(&wave_gen_pool, &signal_meter, 7001500.0, 31, 10);   // Advanced/Extra portion, fast precise sender
-SimStation cw_station2(&wave_gen_pool, &signal_meter, 7002100.0, 19, 50);   // Advanced/Extra portion, slower tired sender
-SimStation cw_station3(&wave_gen_pool, &signal_meter, 7002700.0, 7, 175);   // Novice/General portion, novice first timer  
-SimStation cw_station4(&wave_gen_pool, &signal_meter, 7003400.0, 14, 40);   // Novice/General portion, experienced new ham
-SimStation cw_station5(&wave_gen_pool, &signal_meter, 7004100.0, 23, 80);   // Novice/General portion, experienced tired ham
+SimStation cw_station2(&wave_gen_pool, &signal_meter, 7002200.0, 19, 50);   // Advanced/Extra portion, slower tired sender
+SimStation cw_station3(&wave_gen_pool, &signal_meter, 7002900.0, 11, 95);   // Novice/General portion, novice first timer  
+SimStation cw_station4(&wave_gen_pool, &signal_meter, 7003600.0, 15, 40);   // Novice/General portion, experienced new ham
+SimStation cw_station5(&wave_gen_pool, &signal_meter, 7004300.0, 25, 80);   // Novice/General portion, experienced tired ham
 
 SimTransmitter *station_pool[5] = {
     &cw_station1,
@@ -256,11 +256,11 @@ Realization *realizations[5] = {
 // Five CW stations with only 4 wave generators - resource contention test
 // Different frequencies spread across 40m band for easy identification
 // First 4 stations at 30 WPM for fast recycling, station 5 at 13 WPM for contrast
-SimStation cw_station1(&wave_gen_pool, &signal_meter, 7001000.0, 30, 10);   // Station 1: 30 WPM, slight fist variation
-SimStation cw_station2(&wave_gen_pool, &signal_meter, 7002000.0, 30, 20);   // Station 2: 30 WPM, moderate fist variation
-SimStation cw_station3(&wave_gen_pool, &signal_meter, 7003000.0, 30, 30);   // Station 3: 30 WPM, noticeable fist variation
-SimStation cw_station4(&wave_gen_pool, &signal_meter, 7004000.0, 30, 15);   // Station 4: 30 WPM, slight fist variation
-SimStation cw_station5(&wave_gen_pool, &signal_meter, 7005000.0, 13, 25);   // Station 5: 13 WPM, moderate fist variation
+SimStation cw_station1(&wave_gen_pool, &signal_meter, 7001500.0, 30, 10);   // Station 1: 30 WPM, slight fist variation
+SimStation cw_station2(&wave_gen_pool, &signal_meter, 7002200.0, 30, 20);   // Station 2: 30 WPM, moderate fist variation
+SimStation cw_station3(&wave_gen_pool, &signal_meter, 7002900.0, 30, 30);   // Station 3: 30 WPM, noticeable fist variation
+SimStation cw_station4(&wave_gen_pool, &signal_meter, 7003600.0, 30, 15);   // Station 4: 30 WPM, slight fist variation
+SimStation cw_station5(&wave_gen_pool, &signal_meter, 7004300.0, 13, 25);   // Station 5: 13 WPM, moderate fist variation
 
 SimTransmitter *station_pool[5] = {  // 5 stations but only 4 wave generators available
     &cw_station1,
