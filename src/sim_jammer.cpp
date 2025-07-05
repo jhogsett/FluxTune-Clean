@@ -98,11 +98,3 @@ bool SimJammer::step(unsigned long time)
     return true;
 }
 
-void SimJammer::debug_print_frequency() const
-{
-#ifdef PLATFORM_NATIVE
-    std::cout << "Jammer Base: " << std::fixed << std::setprecision(1) << _frequency 
-              << " Hz, Offset: " << _jammer.get_frequency_offset() << " Hz, "
-              << "Current: " << (_frequency + _jammer.get_frequency_offset()) << " Hz" << std::endl;
-#endif
-}

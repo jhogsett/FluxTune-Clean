@@ -16,13 +16,6 @@
 #include "sim_station.h"
 #include "signal_meter.h"
 
-#ifdef PLATFORM_NATIVE
-#include <cstdlib>  // For rand()
-#include <cstdio>   // For sprintf
-#else
-#include <Arduino.h>
-#endif
-
 #define WAIT_SECONDS 4
 
 // mode is expected to be a derivative of VFO
@@ -31,11 +24,7 @@ SimStation::SimStation(WaveGenPool *wave_gen_pool, SignalMeter *signal_meter, fl
 {
     // Initialize operator frustration drift tracking
     _cycles_completed = 0;
-#ifdef PLATFORM_NATIVE
-    _cycles_until_qsy = 3 + (rand() % 6);  // 3-8 cycles before frustration (realistic)
-#else
     _cycles_until_qsy = 3 + (random(6));   // 3-8 cycles before frustration (realistic)
-#endif
 
     // Initialize repetition state
     _in_wait_delay = false;
@@ -53,11 +42,7 @@ SimStation::SimStation(WaveGenPool *wave_gen_pool, SignalMeter *signal_meter, fl
 {
     // Initialize operator frustration drift tracking    // Initialize operator frustration drift tracking
     _cycles_completed = 0;
-#ifdef PLATFORM_NATIVE
-    _cycles_until_qsy = 3 + (rand() % 6);  // 3-8 cycles before frustration (realistic)
-#else
     _cycles_until_qsy = 3 + (random(6));   // 3-8 cycles before frustration (realistic)
-#endif
 
     // Initialize repetition state
     _in_wait_delay = false;
@@ -75,10 +60,6 @@ bool SimStation::begin(unsigned long time){
         return false;
     }
 
-    #ifdef PLATFORM_NATIVE
-    printf("DEBUG: SimStation::begin() - realizer=%d, time=%lu\n", _realizer, time);
-    #endif
-
     // Check if we have a valid realizer before accessing it
     if(_realizer == -1) {
         return false;
@@ -90,12 +71,6 @@ bool SimStation::begin(unsigned long time){
     _enabled = true;
     force_frequency_update();
     realize();  // CRITICAL: Set active state for audio output!
-
-    #ifdef PLATFORM_NATIVE
-    printf("DEBUG: SimStation::begin() - _enabled=%s, _vfo_freq=%f, _frequency=%f\n",
-           _enabled ? "true" : "false", _vfo_freq, _frequency);
-    #endif
-    // JH!
 
     // Start first CQ immediately (after frequencies are set)
     _morse.start_morse(_generated_message, _stored_wpm);
@@ -113,11 +88,6 @@ void SimStation::realize(){
         return;  // Out of audible range
     }
 
-    #ifdef PLATFORM_NATIVE
-    printf("DEBUG: SimStation::realize() - _active=%s, _frequency=%f\n",
-           _active ? "true" : "false", _frequency);
-    #endif
-
     WaveGen *wavegen = _wave_gen_pool->access_realizer(_realizer);
     wavegen->set_active_frequency(_active);
 }
@@ -125,15 +95,6 @@ void SimStation::realize(){
 // returns true on successful update
 bool SimStation::update(Mode *mode){
     common_frequency_update(mode);
-
-    #ifdef PLATFORM_NATIVE
-    static int update_count = 0;
-    if(update_count < 5) {  // Only show first few updates to avoid spam
-        printf("DEBUG: SimStation::update() - _frequency=%f, _enabled=%s, _realizer=%d\n",
-               _frequency, _enabled ? "true" : "false", _realizer);
-        update_count++;
-    }
-    #endif
 
     if(_enabled && _realizer != -1){
         WaveGen *wavegen = _wave_gen_pool->access_realizer(_realizer);
@@ -152,10 +113,6 @@ bool SimStation::step(unsigned long time){
     int morse_state = _morse.step_morse(time);
       switch(morse_state){
     	case STEP_MORSE_TURN_ON:
-            #ifdef PLATFORM_NATIVE
-            printf("DEBUG: STEP_MORSE_TURN_ON - _frequency=%f, _enabled=%s, _realizer=%d\n",
-                   _frequency, _enabled ? "true" : "false", _realizer);
-            #endif
             _active = true;
             realize();
             send_carrier_charge_pulse(_signal_meter);  // Send charge pulse when carrier turns on
@@ -182,11 +139,7 @@ bool SimStation::step(unsigned long time){
                 apply_operator_frustration_drift();
                   // Reset frustration counter for next QSY
                 _cycles_completed = 0;
-#ifdef PLATFORM_NATIVE
-                _cycles_until_qsy = 3 + (rand() % 6);  // 3-8 cycles before next frustration
-#else
                 _cycles_until_qsy = 3 + (random(6));   // 3-8 cycles before next frustration
-#endif
             }
 
             // DYNAMIC PIPELINING: Free WaveGen at end of message cycle
@@ -207,11 +160,7 @@ bool SimStation::step(unsigned long time){
         } else {
             // WaveGen not available - extend wait period and try again later
             // Add randomization to prevent thundering herd problem
-            #ifdef PLATFORM_NATIVE
-            _next_cq_time = time + 500 + (rand() % 1000);  // Try again in 0.5-1.5 seconds
-            #else
             _next_cq_time = time + 500 + random(1000);     // Try again in 0.5-1.5 seconds
-            #endif
         }
     }
 
@@ -233,28 +182,6 @@ void SimStation::generate_random_callsign(char *callsign_buffer, size_t buffer_s
     // Format: [W/K/N][XX][AAA] where XX = doubled digit (00-99)
       const char *prefixes[] = {"W", "K", "N"};
 
-#ifdef PLATFORM_NATIVE
-    // Improved randomness: Use time-based seeding for better distribution
-    static unsigned long last_seed_time = 0;
-    unsigned long current_time = millis();
-    if (current_time - last_seed_time > 1000) {  // Re-seed every second for better randomness
-        srand(current_time);
-        last_seed_time = current_time;
-    }
-
-    // More random prefix selection
-    int prefix_idx = rand() % 3;
-    int digit = rand() % 10;  // 0-9, will be doubled
-    int suffix_len = 2 + (rand() % 2);  // 2 or 3 letters
-
-    // Use doubled digit to ensure fictional callsign (e.g., W00ABC, K55XYZ, N99QRP)
-    snprintf(callsign_buffer, buffer_size, "%s%d%d", prefixes[prefix_idx], digit, digit);    for(int i = 0; i < suffix_len; i++) {
-        char letter[2] = {(char)('A' + (rand() % 26)), '\0'};
-        strncat(callsign_buffer, letter, buffer_size - strlen(callsign_buffer) - 1);
-    }
-#else    // Arduino version with improved randomness
-    // Use current time for better seed distribution
-
     int prefix_idx = random(3);
     int digit = random(10);  // 0-9, will be doubled
     int suffix_len = 2 + random(2);  // 2 or 3 letters
@@ -264,7 +191,6 @@ void SimStation::generate_random_callsign(char *callsign_buffer, size_t buffer_s
         char letter[2] = {(char)('A' + random(26)), '\0'};
         strcat(callsign_buffer, letter);
     }
-#endif
 }
 
 void SimStation::generate_cq_message()
@@ -273,12 +199,7 @@ void SimStation::generate_cq_message()
     generate_random_callsign(callsign, sizeof(callsign));
 
     // Generate CQ message using configurable format
-#ifdef PLATFORM_NATIVE
-    snprintf(_generated_message, sizeof(_generated_message),
-             CQ_MESSAGE_FORMAT, callsign, callsign);
-#else
     sprintf(_generated_message, CQ_MESSAGE_FORMAT, callsign, callsign);
-#endif
 }
 
 void SimStation::apply_operator_frustration_drift()
@@ -289,11 +210,7 @@ void SimStation::apply_operator_frustration_drift()
 	// ±75 Hz - typical for frustrated amateur
     const float DRIFT_RANGE = 250.0f;  // ±250 Hz - keep nearby within listening range
 
-#ifdef PLATFORM_NATIVE
-    float drift = ((float)rand() / RAND_MAX) * (2.0f * DRIFT_RANGE) - DRIFT_RANGE;
-#else
     float drift = ((float)random(0, (long)(2.0f * DRIFT_RANGE * 100))) / 100.0f - DRIFT_RANGE;
-#endif
 
     // Apply drift to the base class frequency
     _fixed_freq = _fixed_freq + drift;
@@ -315,13 +232,8 @@ void SimStation::apply_wpm_drift()
     // WPM drift range: ±4 WPM around the original speed (increased for testing)
     const int WPM_DRIFT_RANGE = 4;
 
-#ifdef PLATFORM_NATIVE
-    // Use standard rand() for native builds
-    int drift = (rand() % (2 * WPM_DRIFT_RANGE + 1)) - WPM_DRIFT_RANGE;
-#else
     // Use Arduino random() function
     int drift = random(-WPM_DRIFT_RANGE, WPM_DRIFT_RANGE + 1);
-#endif
 
     // Apply drift to current WPM, but keep within reasonable bounds (8-25 WPM for CW)
     _stored_wpm = _base_wpm + drift;
@@ -337,11 +249,7 @@ void SimStation::randomize()
     generate_cq_message();  // This internally calls generate_random_callsign()
     
     // Randomize WPM with a full range for relocated stations (8-25 WPM)
-#ifdef PLATFORM_NATIVE
-    int new_wpm = 8 + (rand() % 18);  // 8-25 WPM range
-#else
     int new_wpm = random(8, 26);  // 8-25 WPM range
-#endif
     
     _base_wpm = new_wpm;
     _stored_wpm = new_wpm;
@@ -354,11 +262,7 @@ void SimStation::randomize()
     _cycles_completed = 0;
     
     // Set a new random frustration threshold (cycles until QSY)
-#ifdef PLATFORM_NATIVE
-    _cycles_until_qsy = 3 + (rand() % 8);  // 3-10 cycles before getting frustrated
-#else
     _cycles_until_qsy = random(3, 11);  // 3-10 cycles before getting frustrated
-#endif
     
     // Reset timing state
     _in_wait_delay = false;

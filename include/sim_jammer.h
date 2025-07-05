@@ -14,9 +14,6 @@ public:
     virtual bool step(unsigned long time);
     virtual void realize();
     
-    // Debug method to display current frequency offset
-    void debug_print_frequency() const;
-
 private:
     AsyncJammer _jammer;
 };
