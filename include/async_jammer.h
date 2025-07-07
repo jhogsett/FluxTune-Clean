@@ -1,6 +1,8 @@
 #ifndef __ASYNC_JAMMER_H__
 #define __ASYNC_JAMMER_H__
 
+#include <stdint.h>
+
 // Jammer state machine timing parameters (from PR documentation)
 #define JAMMER_STEP_INTERVAL 50       // 50ms between updates
 #define JAMMER_MAX_DRIFT 2000.0       // ±2kHz drift range  
@@ -24,8 +26,8 @@ public:
     AsyncJammer();
     
     void start_jammer_transmission(bool repeat);
-    int step_jammer(unsigned long time);
-    int get_current_state() const { return _current_state; }
+    uint8_t step_jammer(unsigned long time);
+    uint8_t get_current_state() const { return _current_state; }
     float get_frequency_offset() const { return _frequency_offset; }
     
 private:
@@ -37,7 +39,7 @@ private:
     bool _active;                     // True when jammer is active
     bool _repeat;                     // True to repeat transmissions (jammers always repeat)
     bool _transmitting;               // True during transmission
-    int _current_state;               // Current jammer state (TRANSMITTING, MUTED)
+    uint8_t _current_state;               // Current jammer state (TRANSMITTING, MUTED)
     unsigned long _next_event_time;   // When next state change should occur
     bool _initialized;                // True after first start_jammer_transmission call
     

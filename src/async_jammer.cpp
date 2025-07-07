@@ -32,7 +32,7 @@ void AsyncJammer::start_jammer_transmission(bool repeat)
     _last_drift_time = 0;
 }
 
-int AsyncJammer::step_jammer(unsigned long time)
+uint8_t AsyncJammer::step_jammer(unsigned long time)
 {
     if (!_active || !_initialized) {
         return STEP_JAMMER_LEAVE_OFF;
