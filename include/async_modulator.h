@@ -54,9 +54,9 @@ protected:    // ========================================
     // ========================================
     void set_string(const char* str);
     const char* get_string() const { return async_str; }
-    int get_string_length() const { return async_length; }
-    int get_string_position() const { return async_position; }
-    void set_string_position(int pos) { async_position = pos; }
+    uint8_t get_string_length() const { return async_length; }
+    uint8_t get_string_position() const { return async_position; }
+    void set_string_position(uint8_t pos) { async_position = pos; }
     void advance_string_position() { async_position++; }
     char get_current_char() const;
     bool at_string_end() const { return async_position >= async_length; }
@@ -72,8 +72,8 @@ protected:    // ========================================
     // ========================================
     void set_element_done(bool done) { async_element_done = done; }
     bool is_element_done() const { return async_element_done; }
-    byte get_current_element() const { return async_element; }
-    void set_current_element(byte element) { async_element = element; }
+    uint8_t get_current_element() const { return async_element; }
+    void set_current_element(uint8_t element) { async_element = element; }
     void advance_element() { async_element++; }
     
 private:
@@ -83,12 +83,12 @@ private:
     
     // Text and position management
     const char *async_str;           // String being transmitted
-    int async_length;                // Length of text string
-    int async_position;              // Current position in text string
+    uint8_t async_length;                // Length of text string
+    uint8_t async_position;              // Current position in text string
     int async_element_del;           // Base timing unit in milliseconds
     
     // Element timing and state
-    byte async_element;              // Current element within character
+    uint8_t async_element;              // Current element within character
     bool async_element_done;         // True when current element is finished
     unsigned long async_next_event;  // Time when next state change occurs
     
