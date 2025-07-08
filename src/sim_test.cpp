@@ -6,9 +6,11 @@
 
 SimTest::SimTest(WaveGenPool *wave_gen_pool, SignalMeter *signal_meter, float fixed_freq,
                  float toggle_rate_hz, float tone_a_offset, float tone_b_offset) 
-    : SimTransmitter(wave_gen_pool, fixed_freq), _signal_meter(signal_meter),
-      _toggle_rate_hz(toggle_rate_hz), _current_tone_a_offset(tone_a_offset), 
-      _current_tone_b_offset(tone_b_offset)
+    : SimTransmitter(wave_gen_pool, fixed_freq),
+        _current_tone_a_offset(tone_a_offset),
+        _current_tone_b_offset(tone_b_offset),
+        _toggle_rate_hz(toggle_rate_hz),
+        _signal_meter(signal_meter)
 {
     // Calculate toggle interval in milliseconds from Hz rate
     _toggle_interval = (unsigned long)(1000.0 / _toggle_rate_hz);

@@ -29,8 +29,8 @@ public:
     AsyncPager();
 
     void start_pager_transmission(bool repeat);
-    int step_pager(unsigned long time);
-    int get_current_state() { return _current_state; }
+    uint8_t step_pager(unsigned long time);
+    uint8_t get_current_state() { return _current_state; }
     
 private:
     void start_next_phase(unsigned long time);
@@ -39,7 +39,7 @@ private:
     bool _active;                     // True when pager is active
     bool _repeat;                     // True to repeat transmissions
     bool _transmitting;               // True during tone transmission
-    int _current_state;               // Current pager state (TONE_A, TONE_B, SILENCE)
+    uint8_t _current_state;               // Current pager state (TONE_A, TONE_B, SILENCE)
     unsigned long _next_event_time;   // When next state change should occur
     bool _initialized;                // True after first start_pager_transmission call
 };

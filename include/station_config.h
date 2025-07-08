@@ -16,11 +16,11 @@
                                  // Use this for dynamic station pipelining development
 
 // ===== DEMONSTRATION CONFIGURATION =====
-// #define CONFIG_MIXED_STATIONS    // Uncomment to restore full functionality for demos
+#define CONFIG_MIXED_STATIONS    // Uncomment to restore full functionality for demos
 
 // ===== TEST CONFIGURATIONS =====
 // #define CONFIG_FOUR_CW          // Four CW/Morse stations for CW testing
-#define CONFIG_FIVE_CW          // Four CW/Morse stations for simulating Field Day traffic
+// #define CONFIG_FIVE_CW          // Four CW/Morse stations for simulating Field Day traffic
 // #define CONFIG_TEST_PERFORMANCE  // Single test station for measuring main loop performance
 // #define CONFIG_FILE_PILE_UP     // Five CW/Morse stations simulating Scarborough Reef pile-up (BS77H variations)
 // #define CONFIG_FOUR_NUMBERS     // Four Numbers stations for spooky testing

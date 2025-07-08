@@ -26,7 +26,7 @@ void AsyncPager::start_pager_transmission(bool repeat)
     _next_event_time = 0;
 }
 
-int AsyncPager::step_pager(unsigned long time)
+uint8_t AsyncPager::step_pager(unsigned long time)
 {
     if (!_active || !_initialized) {
         return STEP_PAGER_LEAVE_OFF;
