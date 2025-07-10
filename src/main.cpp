@@ -4,7 +4,11 @@
 #include <Wire.h>
 #include <MD_AD9833.h>
 #include <Encoder.h>
+#ifdef ARDUINO_AVR_NANO_EVERY
+#include <Adafruit_NeoPixel.h>
+#else
 #include <PololuLedStrip.h>
+#endif
 
 #include "displays.h"
 #include "hardware.h"
@@ -69,7 +73,9 @@
 // #define ENABLE_BRANDING_MODE  // OPTIMIZATION: Disabled by default to save Flash
 
 // Create an ledStrip object and specify the pin it will use.
+#ifndef ARDUINO_AVR_NANO_EVERY
 PololuLedStrip<12> ledStrip;
+#endif
 
 #define LED_COUNT 7
 
@@ -665,7 +671,9 @@ void activate_branding_mode() {
     // Enter infinite loop for photography - device stays in perfect display state
     while(true) {
         // Keep signal meter LEDs at full brightness
+#ifndef ARDUINO_AVR_NANO_EVERY
         ledStrip.write(full_colors, LED_COUNT);
+#endif
           // Keep both panel LEDs at 4x maximum brightness
         analogWrite(WHITE_PANEL_LED, (PANEL_LOCK_LED_FULL_BRIGHTNESS * 4) / PANEL_LED_BRIGHTNESS_DIVISOR);
         analogWrite(BLUE_PANEL_LED, (PANEL_LOCK_LED_FULL_BRIGHTNESS * 4) / PANEL_LED_BRIGHTNESS_DIVISOR);
