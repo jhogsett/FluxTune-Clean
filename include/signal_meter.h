@@ -3,7 +3,11 @@
 
 #ifndef NATIVE_BUILD
 #include <Arduino.h>
+#ifdef ARDUINO_AVR_NANO_EVERY
+#include <Adafruit_NeoPixel.h>
+#else
 #include <PololuLedStrip.h>
+#endif
 #endif
 
 // Signal Meter - 7 WS2812 LEDs showing signal strength
@@ -32,6 +36,8 @@
 class SignalMeter
 {
 public:
+    static const int LED_COUNT = 7;
+    
     SignalMeter();
     
     void init();
@@ -52,7 +58,7 @@ public:
     void clear_flashlight_mode();              // Return to normal signal meter operation
 
 private:
-    void write_leds();    static const int LED_COUNT = 7;
+    void write_leds();
     static const int MAX_ACCUMULATOR = 510;     // Maximum accumulator value (2x LED range for resolution)
     // Panel LED lock indicator parameters
     static const int PANEL_LED_MAX_ACCUMULATOR = 255;
@@ -73,8 +79,14 @@ private:
     int _flashlight_brightness;                 // Brightness level for flashlight mode (0-255)
 
 #ifndef NATIVE_BUILD
+#ifdef ARDUINO_AVR_NANO_EVERY
+    // Use Adafruit NeoPixel for Nano Every
+    static Adafruit_NeoPixel* _led_strip;
+#else
+    // Use PololuLedStrip for traditional Arduino boards
     rgb_color _led_buffer[LED_COUNT];
     static rgb_color _led_colors[LED_COUNT];
+#endif
 #endif
 };
 
