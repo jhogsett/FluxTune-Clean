@@ -4,7 +4,11 @@
 #include <Wire.h>
 #include <MD_AD9833.h>
 #include <Encoder.h>
+#ifdef ARDUINO_AVR_NANO_EVERY
 #include <Adafruit_NeoPixel.h>
+#else
+#include <PololuLedStrip.h>
+#endif
 
 #include "displays.h"
 #include "hardware.h"
@@ -69,7 +73,9 @@
 // #define ENABLE_BRANDING_MODE  // OPTIMIZATION: Disabled by default to save Flash
 
 // Create an ledStrip object and specify the pin it will use.
-// Now using Adafruit NeoPixel for all platforms
+#ifndef ARDUINO_AVR_NANO_EVERY
+PololuLedStrip<12> ledStrip;
+#endif
 
 #define LED_COUNT 7
 
