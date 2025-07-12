@@ -20,7 +20,8 @@
 
 // ===== TEST CONFIGURATIONS =====
 // #define CONFIG_FOUR_CW          // Four CW/Morse stations for CW testing
-#define CONFIG_FIVE_CW          // Four CW/Morse stations for simulating Field Day traffic
+#define CONFIG_FIVE_CW          // Five CW/Morse stations for simulating Field Day traffic
+// #define CONFIG_TEN_CW           // 21-station stress test for Nano Every (10 CW + 5 Numbers + 4 RTTY + 2 Pager)
 // #define CONFIG_TEST_PERFORMANCE  // Single test station for measuring main loop performance
 // #define CONFIG_FILE_PILE_UP     // Five CW/Morse stations simulating Scarborough Reef pile-up (BS77H variations)
 // #define CONFIG_FOUR_NUMBERS     // Four Numbers stations for spooky testing
@@ -83,9 +84,19 @@
 #endif
 
 #ifdef CONFIG_FIVE_CW
-    // Test: Four CW stations with different messages/speeds
+    // Test: Five CW stations with different messages/speeds
     #define ENABLE_FOUR_CW_STATIONS
     #define ENABLE_MORSE_STATION
+    // Other stations disabled for focused CW testing
+#endif
+
+#ifdef CONFIG_TEN_CW
+    // Test: Ten CW stations with different messages/speeds for Nano Every memory testing
+    #define ENABLE_TEN_CW_STATIONS
+    #define ENABLE_MORSE_STATION
+    #define ENABLE_PAGER_STATION
+    #define ENABLE_RTTY_STATION
+    #define ENABLE_NUMBERS_STATION
     // Other stations disabled for focused CW testing
 #endif
 

@@ -4,7 +4,23 @@
 #include "sim_transmitter.h"
 #include <stdint.h>
 
+// Dynamic MAX_STATIONS based on configuration
+#ifdef CONFIG_TEN_CW
+#define MAX_STATIONS 21
+#elif defined(CONFIG_MIXED_STATIONS)
+#define MAX_STATIONS 4
+#elif defined(CONFIG_FIVE_CW) || defined(CONFIG_FIVE_CW_RESOURCE_TEST)
+#define MAX_STATIONS 5
+#elif defined(CONFIG_FOUR_CW) || defined(CONFIG_FOUR_NUMBERS) || defined(CONFIG_FOUR_PAGER) || defined(CONFIG_FOUR_RTTY) || defined(CONFIG_FOUR_JAMMER) || defined(CONFIG_CW_CLUSTER)
+#define MAX_STATIONS 4
+#elif defined(CONFIG_DEV_LOW_RAM) || defined(CONFIG_FILE_PILE_UP)
 #define MAX_STATIONS 3
+#elif defined(CONFIG_MINIMAL_CW) || defined(CONFIG_TEST_PERFORMANCE)
+#define MAX_STATIONS 1
+#else
+#define MAX_STATIONS 4  // Default fallback
+#endif
+
 #define MAX_AD9833 4
 
 // Debug control - disabled for production

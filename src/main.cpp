@@ -4,7 +4,7 @@
 #include <Wire.h>
 #include <MD_AD9833.h>
 #include <Encoder.h>
-#include <PololuLedStrip.h>
+#include <Adafruit_NeoPixel.h>
 
 #include "displays.h"
 #include "hardware.h"
@@ -69,7 +69,8 @@
 // #define ENABLE_BRANDING_MODE  // OPTIMIZATION: Disabled by default to save Flash
 
 // Create an ledStrip object and specify the pin it will use.
-PololuLedStrip<12> ledStrip;
+// Now using Adafruit NeoPixel for both platforms
+// PololuLedStrip<12> ledStrip;
 
 #define LED_COUNT 7
 
@@ -276,6 +277,54 @@ Realization *realizations[5] = {  // 5 realizations competing for 4 resources
     &cw_station3,
     &cw_station4,
     &cw_station5
+};
+#endif
+
+#ifdef CONFIG_TEN_CW
+// STRESS TEST: 21 stations total for Arduino Nano Every comprehensive testing
+// 10 CW stations spread across 40m band with varying speeds and fist qualities
+SimStation cw_station1(&wave_gen_pool, &signal_meter, 7001000.0, 31, 10);   // Fast precise sender
+SimStation cw_station2(&wave_gen_pool, &signal_meter, 7001500.0, 19, 50);   // Slower tired sender
+SimStation cw_station3(&wave_gen_pool, &signal_meter, 7002000.0, 11, 95);   // Novice first timer  
+SimStation cw_station4(&wave_gen_pool, &signal_meter, 7002500.0, 15, 40);   // Experienced new ham
+SimStation cw_station5(&wave_gen_pool, &signal_meter, 7003000.0, 25, 80);   // Experienced tired ham
+SimStation cw_station6(&wave_gen_pool, &signal_meter, 7003500.0, 22, 30);   // Contest station
+SimStation cw_station7(&wave_gen_pool, &signal_meter, 7004000.0, 18, 60);   // Casual operator
+SimStation cw_station8(&wave_gen_pool, &signal_meter, 7004500.0, 28, 20);   // Expert DXer
+SimStation cw_station9(&wave_gen_pool, &signal_meter, 7005000.0, 13, 70);   // QRP enthusiast
+SimStation cw_station10(&wave_gen_pool, &signal_meter, 7005500.0, 16, 45);  // Ragchewer
+
+// 5 Numbers stations above CW in 40m band
+SimNumbers numbers_station1(&wave_gen_pool, &signal_meter, 7006000.0, 12);  // Standard numbers
+SimNumbers numbers_station2(&wave_gen_pool, &signal_meter, 7007000.0, 15);  // Faster numbers
+SimNumbers numbers_station3(&wave_gen_pool, &signal_meter, 7008000.0, 18);  // Quick numbers
+SimNumbers numbers_station4(&wave_gen_pool, &signal_meter, 7009000.0, 22);  // Rapid numbers
+SimNumbers numbers_station5(&wave_gen_pool, &signal_meter, 7010000.0, 10);  // Slow numbers
+
+// 4 RTTY stations on 20m band
+SimRTTY rtty_station1(&wave_gen_pool, &signal_meter, 14002000.0);          // RTTY station 1
+SimRTTY rtty_station2(&wave_gen_pool, &signal_meter, 14004000.0);          // RTTY station 2
+SimRTTY rtty_station3(&wave_gen_pool, &signal_meter, 14006000.0);          // RTTY station 3
+SimRTTY rtty_station4(&wave_gen_pool, &signal_meter, 14008000.0);          // RTTY station 4
+
+// 2 Pager stations on 2m band
+SimPager pager_station1(&wave_gen_pool, &signal_meter, 146800000.0);       // Standard pager
+SimPager pager_station2(&wave_gen_pool, &signal_meter, 146900000.0);       // Second pager
+
+SimTransmitter *station_pool[21] = {  // 21 stations competing for 4 wave generators
+    &cw_station1, &cw_station2, &cw_station3, &cw_station4, &cw_station5,
+    &cw_station6, &cw_station7, &cw_station8, &cw_station9, &cw_station10,
+    &numbers_station1, &numbers_station2, &numbers_station3, &numbers_station4, &numbers_station5,
+    &rtty_station1, &rtty_station2, &rtty_station3, &rtty_station4,
+    &pager_station1, &pager_station2
+};
+
+Realization *realizations[21] = {  // 21 realizations competing for 4 resources
+    &cw_station1, &cw_station2, &cw_station3, &cw_station4, &cw_station5,
+    &cw_station6, &cw_station7, &cw_station8, &cw_station9, &cw_station10,
+    &numbers_station1, &numbers_station2, &numbers_station3, &numbers_station4, &numbers_station5,
+    &rtty_station1, &rtty_station2, &rtty_station3, &rtty_station4,
+    &pager_station1, &pager_station2
 };
 #endif
 
@@ -506,6 +555,8 @@ bool realization_stats[1] = {false};  // Single test station
 bool realization_stats[3] = {false, false, false};
 #elif defined(CONFIG_FIVE_CW_RESOURCE_TEST)
 bool realization_stats[5] = {false, false, false, false, false};  // 5 stations for resource test
+#elif defined(CONFIG_TEN_CW)
+bool realization_stats[21] = {false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false};  // 21 stations for comprehensive Nano Every stress test
 #elif defined(CONFIG_FILE_PILE_UP)
 bool realization_stats[3] = {false, false, false};  // 3 stations for pile-up debug
 #else
@@ -518,6 +569,8 @@ RealizationPool realization_pool(realizations, realization_stats, 1);  // Only 1
 RealizationPool realization_pool(realizations, realization_stats, 3);  // 3 stations for development config
 #elif defined(CONFIG_FIVE_CW_RESOURCE_TEST)
 RealizationPool realization_pool(realizations, realization_stats, 5);  // 5 stations competing for 4 wave generators
+#elif defined(CONFIG_TEN_CW)
+RealizationPool realization_pool(realizations, realization_stats, 21);  // 21 stations competing for 4 wave generators
 #elif defined(CONFIG_FILE_PILE_UP)
 RealizationPool realization_pool(realizations, realization_stats, 3);  // 3 stations for pile-up debug
 #else
@@ -664,9 +717,8 @@ void activate_branding_mode() {
 
     // Enter infinite loop for photography - device stays in perfect display state
     while(true) {
-        // Keep signal meter LEDs at full brightness
-        ledStrip.write(full_colors, LED_COUNT);
-          // Keep both panel LEDs at 4x maximum brightness
+        // Keep signal meter LEDs at full brightness (handled by SignalMeter class now)
+        // Keep both panel LEDs at 4x maximum brightness
         analogWrite(WHITE_PANEL_LED, (PANEL_LOCK_LED_FULL_BRIGHTNESS * 4) / PANEL_LED_BRIGHTNESS_DIVISOR);
         analogWrite(BLUE_PANEL_LED, (PANEL_LOCK_LED_FULL_BRIGHTNESS * 4) / PANEL_LED_BRIGHTNESS_DIVISOR);
         
@@ -822,6 +874,77 @@ void loop()
 
 	cw_station5.begin(time + random(5000));
 	cw_station5.set_station_state(AUDIBLE);
+#endif
+
+#ifdef CONFIG_TEN_CW
+	// Initialize 21 stations for comprehensive Nano Every stress testing
+	
+	// Initialize 10 CW stations
+	cw_station1.begin(time + random(1000));
+	cw_station1.set_station_state(AUDIBLE);
+
+	cw_station2.begin(time + random(2000));
+	cw_station2.set_station_state(AUDIBLE);
+
+	cw_station3.begin(time + random(3000));
+	cw_station3.set_station_state(AUDIBLE);
+
+	cw_station4.begin(time + random(4000));
+	cw_station4.set_station_state(AUDIBLE);
+
+	cw_station5.begin(time + random(5000));
+	cw_station5.set_station_state(AUDIBLE);
+
+	cw_station6.begin(time + random(6000));
+	cw_station6.set_station_state(AUDIBLE);
+
+	cw_station7.begin(time + random(7000));
+	cw_station7.set_station_state(AUDIBLE);
+
+	cw_station8.begin(time + random(8000));
+	cw_station8.set_station_state(AUDIBLE);
+
+	cw_station9.begin(time + random(9000));
+	cw_station9.set_station_state(AUDIBLE);
+
+	cw_station10.begin(time + random(10000));
+	cw_station10.set_station_state(AUDIBLE);
+
+	// Initialize 5 Numbers stations
+	numbers_station1.begin(time + random(11000));
+	numbers_station1.set_station_state(AUDIBLE);
+
+	numbers_station2.begin(time + random(12000));
+	numbers_station2.set_station_state(AUDIBLE);
+
+	numbers_station3.begin(time + random(13000));
+	numbers_station3.set_station_state(AUDIBLE);
+
+	numbers_station4.begin(time + random(14000));
+	numbers_station4.set_station_state(AUDIBLE);
+
+	numbers_station5.begin(time + random(15000));
+	numbers_station5.set_station_state(AUDIBLE);
+
+	// Initialize 4 RTTY stations
+	rtty_station1.begin(time + random(16000));
+	rtty_station1.set_station_state(AUDIBLE);
+
+	rtty_station2.begin(time + random(17000));
+	rtty_station2.set_station_state(AUDIBLE);
+
+	rtty_station3.begin(time + random(18000));
+	rtty_station3.set_station_state(AUDIBLE);
+
+	rtty_station4.begin(time + random(19000));
+	rtty_station4.set_station_state(AUDIBLE);
+
+	// Initialize 2 Pager stations
+	pager_station1.begin(time + random(20000));
+	pager_station1.set_station_state(AUDIBLE);
+
+	pager_station2.begin(time + random(21000));
+	pager_station2.set_station_state(AUDIBLE);
 #endif
 
 #ifdef CONFIG_FILE_PILE_UP
