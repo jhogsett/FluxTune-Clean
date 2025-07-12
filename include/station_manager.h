@@ -4,7 +4,7 @@
 #include "sim_transmitter.h"
 #include <stdint.h>
 
-#define MAX_STATIONS 3
+#define MAX_STATIONS 21
 #define MAX_AD9833 4
 
 // Debug control - disabled for production
