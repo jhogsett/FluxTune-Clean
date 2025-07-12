@@ -7,6 +7,7 @@
 class SignalMeter; // Forward declaration
 
 #define SPACE_FREQUENCY 0.1
+#define MESSAGE_BUFFER 50
 
 // Configurable CQ message format - can be overridden by defining before including this header
 #ifndef CQ_MESSAGE_FORMAT
@@ -33,7 +34,8 @@ public:
 private:
     AsyncMorse _morse;
     bool _changed;
-    SignalMeter *_signal_meter;char _generated_message[40];     // Generated CQ message with random callsign
+    SignalMeter *_signal_meter;
+    char _generated_message[MESSAGE_BUFFER];     // Generated CQ message with random callsign
     int _stored_wpm;                // Stored WPM from constructor  
     int _base_wpm;                  // Store original WPM for drift calculations
       // Operator frustration frequency drift
