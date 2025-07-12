@@ -10,8 +10,7 @@
 #endif
 
 #ifndef NATIVE_BUILD
-#ifdef ARDUINO_AVR_NANO_EVERY
-// For Nano Every - using Adafruit NeoPixel
+// For both platforms - using Adafruit NeoPixel
 Adafruit_NeoPixel* SignalMeter::_led_strip = nullptr;
 extern int option_contrast;         // Defined in main.cpp (matches saved_data.cpp type)
 
@@ -25,22 +24,6 @@ static const uint32_t LED_COLORS_NEOPIXEL[SignalMeter::LED_COUNT] = {
     0x0F0F00,   // Yellow
     0x0F0000    // Red
 };
-#else
-// For traditional Arduino - using PololuLedStrip
-extern PololuLedStrip<12> ledStrip;  // Defined in main.cpp
-extern int option_contrast;         // Defined in main.cpp (matches saved_data.cpp type)
-
-// Color definitions: Green → Yellow → Red (like analog signal meters)
-rgb_color SignalMeter::_led_colors[LED_COUNT] = {
-    { 0, 15, 0 },   // Green
-    { 0, 15, 0 },   // Green
-    { 0, 15, 0 },   // Green
-    { 0, 15, 0 },   // Green
-    { 15, 15, 0 },  // Yellow
-    { 15, 15, 0 },  // Yellow
-    { 15, 0, 0 }    // Red
-};
-#endif
 #endif
 
 SignalMeter::SignalMeter()
@@ -58,15 +41,13 @@ void SignalMeter::init()
     clear();
     _panel_led_accumulator = 0;
 #ifndef NATIVE_BUILD
-#ifdef ARDUINO_AVR_NANO_EVERY
-    // Initialize NeoPixel strip for Nano Every
+    // Initialize NeoPixel strip for both platforms
     if (!_led_strip) {
         _led_strip = new Adafruit_NeoPixel(LED_COUNT, 12, NEO_GRB + NEO_KHZ800);
         _led_strip->begin();
         _led_strip->clear();
         _led_strip->show();
     }
-#endif
     _last_decay_time = millis();
 #endif
 }
@@ -169,24 +150,15 @@ void SignalMeter::write_leds()
         // Flashlight mode: set all LEDs to white at specified brightness
         // White is created using RGB mix since these are RGB LEDs, not RGBW
 
-        int white_brightness = _flashlight_brightness; // / SIGNAL_METER_BRIGHTNESS_DIVISOR;
+        int white_brightness = _flashlight_brightness;
         
-#ifdef ARDUINO_AVR_NANO_EVERY
-        // NeoPixel implementation for Nano Every
+        // NeoPixel implementation for both platforms
         if (_led_strip) {
             for (int i = 0; i < LED_COUNT; i++) {
                 _led_strip->setPixelColor(i, _led_strip->Color(white_brightness, white_brightness, white_brightness));
             }
             _led_strip->show();
         }
-#else
-        // PololuLedStrip implementation for traditional Arduino
-        for (int i = 0; i < LED_COUNT; i++) {
-            _led_buffer[i].red = white_brightness;
-            _led_buffer[i].green = white_brightness;
-            _led_buffer[i].blue = white_brightness;
-        }
-#endif
     } else {
         // Normal signal meter mode
         
@@ -218,8 +190,7 @@ void SignalMeter::write_leds()
         if (on_leds > LED_COUNT) on_leds = LED_COUNT;
         if (on_leds < 0) on_leds = 0;
         
-#ifdef ARDUINO_AVR_NANO_EVERY
-        // NeoPixel implementation for Nano Every
+        // NeoPixel implementation for both platforms
         if (_led_strip) {
             // Clear all pixels first
             _led_strip->clear();
@@ -247,33 +218,6 @@ void SignalMeter::write_leds()
             }
             _led_strip->show();
         }
-#else
-        // PololuLedStrip implementation for traditional Arduino
-        // Copy base colors for lit LEDs
-        memcpy(_led_buffer, _led_colors, on_leds * sizeof(rgb_color));
-        
-        // Clear remaining LEDs
-        memset(_led_buffer + on_leds, 0, (LED_COUNT - on_leds) * sizeof(rgb_color));
-        
-        // Apply partial brightness to last LED if needed
-        if (on_leds > 0) {
-            _led_buffer[on_leds-1].red = (_led_buffer[on_leds-1].red * remain) / 16;
-            _led_buffer[on_leds-1].green = (_led_buffer[on_leds-1].green * remain) / 16;
-            _led_buffer[on_leds-1].blue = (_led_buffer[on_leds-1].blue * remain) / 16;
-        }
-        
-        // Apply contrast adjustment and device variant scaling
-        for (int i = 0; i < LED_COUNT; i++) {
-            _led_buffer[i].red = (_led_buffer[i].red * option_contrast) / SIGNAL_METER_BRIGHTNESS_DIVISOR;
-            _led_buffer[i].green = (_led_buffer[i].green * option_contrast) / SIGNAL_METER_BRIGHTNESS_DIVISOR;
-            _led_buffer[i].blue = (_led_buffer[i].blue * option_contrast) / SIGNAL_METER_BRIGHTNESS_DIVISOR;
-        }
-#endif
     }
-    
-#ifndef ARDUINO_AVR_NANO_EVERY
-    // Write to hardware (only for PololuLedStrip)
-    ledStrip.write(_led_buffer, LED_COUNT);
-#endif
 #endif
 }
