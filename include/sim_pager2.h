@@ -1,10 +1,10 @@
 #ifndef __SIM_PAGER2_H__
 #define __SIM_PAGER2_H__
 
-// Step 5: Testing individual generators to confirm both work identically
-#define ENABLE_FIRST_GENERATOR  // Use first generator only (original behavior)
+// Step 6: DUAL GENERATOR MODE - The critical test (where it always fails)
+//#define ENABLE_FIRST_GENERATOR  // Use first generator only (original behavior)
 //#define ENABLE_SECOND_GENERATOR // Use second generator only (for testing)  
-//#define ENABLE_DUAL_GENERATOR   // Use both generators for dual-tone (target behavior)
+#define ENABLE_DUAL_GENERATOR   // Use both generators for dual-tone (target behavior)
 
 #include "async_pager.h"
 #include "sim_transmitter.h"
@@ -33,6 +33,9 @@ public:
     
     // Method to generate new tone pairs for testing
     void generate_new_tone_pair();
+    
+    // Debug method to test dual generator acquisition
+    void debug_test_dual_generator_acquisition();
 
 private:
     AsyncPager _pager;

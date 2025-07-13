@@ -845,6 +845,10 @@ void loop()
 #ifdef ENABLE_PAGER2_STATION
 	pager2_station1.begin(time + random(1000));  // Start FIRST to test dual acquisition
 	pager2_station1.set_station_state(AUDIBLE);
+	
+	// DEBUG: Test dual generator acquisition capability
+	delay(2000);  // Wait for initialization to settle
+	pager2_station1.debug_test_dual_generator_acquisition();
 #endif
 
 	// Initialize CW stations AFTER SimPager2 has claimed its dual generators
