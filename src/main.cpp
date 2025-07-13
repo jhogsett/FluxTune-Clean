@@ -627,29 +627,6 @@ StationManager station_manager(station_pool, 1);
 StationManager station_manager(station_pool, 4);  // Default fallback
 #endif
 
-// DEBUG: Station count verification
-void debug_station_pool_state() {
-    Serial.println("=== STATION POOL DEBUG ===");
-    Serial.print("Array size (compile time): ");
-    Serial.println(sizeof(station_pool) / sizeof(station_pool[0]));
-    
-    int actual_count = 0;
-    for(int i = 0; i < (sizeof(station_pool) / sizeof(station_pool[0])); i++) {
-        Serial.print("station_pool[");
-        Serial.print(i);
-        Serial.print("] = ");
-        if(station_pool[i] != nullptr) {
-            Serial.println("VALID");
-            actual_count++;
-        } else {
-            Serial.println("nullptr - CRITICAL BUG!");
-        }
-    }
-    Serial.print("Valid stations: ");
-    Serial.println(actual_count);
-    Serial.println("=== END STATION DEBUG ===");
-}
-
 VFO vfoa("VFO A",   7000000.0, 10, &realization_pool);
 VFO vfob("VFO B",  14000000.0, 10, &realization_pool);
 VFO vfoc("VFO C", 146520000.0, 5000, &realization_pool);
@@ -710,79 +687,46 @@ void setup_buttons(){
 
 void setup(){
 	Serial.begin(115200);
-	delay(1000);  // Give Serial time to initialize
-	Serial.println("DEBUG: Starting setup()");
 	
-	Serial.println("DEBUG: Calling randomizer.randomize()");
 	randomizer.randomize();
-	Serial.println("DEBUG: randomizer.randomize() completed");
 
 #ifdef USE_EEPROM_TABLES
 	// Initialize EEPROM tables if enabled
-	Serial.println("DEBUG: Initializing EEPROM tables");
 	if (!eeprom_tables_init()) {
 		Serial.println("WARNING: EEPROM tables not loaded!");
 		Serial.println("Run the eeprom_table_loader sketch first.");
 		// Continue anyway - tables will fall back to Flash or fail gracefully
 	}
-	Serial.println("DEBUG: EEPROM tables initialization completed");
 #endif
 
-	Serial.println("DEBUG: Calling load_save_data()");
 	load_save_data();
-	Serial.println("DEBUG: load_save_data() completed");
-
-	Serial.println("DEBUG: Calling setup_leds()");
 	setup_leds();
-	Serial.println("DEBUG: setup_leds() completed");
-	
-	Serial.println("DEBUG: Calling setup_display()");
 	setup_display();
-	Serial.println("DEBUG: setup_display() completed");
-	
-	Serial.println("DEBUG: Calling setup_signal_meter()");
 	setup_signal_meter();
-	Serial.println("DEBUG: setup_signal_meter() completed");
 
-	Serial.println("DEBUG: Initializing AD9833 generators");
 	AD1.begin();
 	AD1.setFrequency((MD_AD9833::channel_t)0, 0.1);
 	AD1.setFrequency((MD_AD9833::channel_t)1, 0.1);
 	AD1.setMode(MD_AD9833::MODE_SINE);
-	Serial.println("DEBUG: AD1 initialized");
 
 	AD2.begin();
 	AD2.setFrequency((MD_AD9833::channel_t)0, 0.1);
 	AD2.setFrequency((MD_AD9833::channel_t)1, 0.1);
 	AD2.setMode(MD_AD9833::MODE_SINE);
-	Serial.println("DEBUG: AD2 initialized");
 
 	AD3.begin();
 	AD3.setFrequency((MD_AD9833::channel_t)0, 0.1);
 	AD3.setFrequency((MD_AD9833::channel_t)1, 0.1);
 	AD3.setMode(MD_AD9833::MODE_SINE);
-	Serial.println("DEBUG: AD3 initialized");
 	
 	AD4.begin();
 	AD4.setFrequency((MD_AD9833::channel_t)0, 0.1);
 	AD4.setFrequency((MD_AD9833::channel_t)1, 0.1);
 	AD4.setMode(MD_AD9833::MODE_SINE);
-	Serial.println("DEBUG: AD4 initialized");
 
 	// Initialize StationManager with dynamic pipelining
-	Serial.println("DEBUG: Initializing StationManager");
 	station_manager.enableDynamicPipelining(true);
-	Serial.println("DEBUG: Dynamic pipelining enabled");
-	
 	station_manager.setupPipeline(7000000); // Start with VFO A frequency
-	Serial.println("DEBUG: Pipeline setup completed");
-	
-	// DEBUG: Check for station pool array bounds bug - RE-ENABLED TO TEST FIX
-	Serial.println("DEBUG: Calling debug_station_pool_state()");
-	debug_station_pool_state();
-	Serial.println("DEBUG: debug_station_pool_state() completed");
-	
-	Serial.println("DEBUG: setup() completed successfully!");
 }
 
 #ifdef ENABLE_BRANDING_MODE
@@ -885,49 +829,31 @@ void purge_events(){
 
 void loop()
 {
-	Serial.println("DEBUG: Starting loop()");
-	
-	Serial.println("DEBUG: Calling display.scroll_string()");
     display.scroll_string(FSTR("FLuXTuNE"), DISPLAY_SHOW_TIME, DISPLAY_SCROLL_TIME);
-	Serial.println("DEBUG: display.scroll_string() completed");
 
 #ifdef ENABLE_BRANDING_MODE
     // BRANDING MODE EASTER EGG - Check if encoder A button is pressed during startup
     // Pin 4 (SWA) goes LOW when button is pressed
-    Serial.println("DEBUG: Checking branding mode");
     if (digitalRead(SWA) == LOW) {
         activate_branding_mode();  // Never returns - infinite loop for photography
     }
-    Serial.println("DEBUG: Branding mode check completed");
 #endif
 
-	Serial.println("DEBUG: Getting millis() time");
     unsigned long time = millis();
-    Serial.print("DEBUG: Current time = ");
-    Serial.println(time);
     
-    // panel_leds.begin(time, LEDHandler::STYLE_PLAIN | LEDHandler::STYLE_BLANKING, DEFAULT_PANEL_LEDS_SHOW_TIME, DEFAULT_PANEL_LEDS_BLANK_TIME);
-	
-	// ============================================================================
-	// INITIALIZE 12-STATION DYNAMIC POOL	// Start stations based on configuration
-	// ============================================================================
-	
-	Serial.println("DEBUG: Starting configuration-specific initialization");
+    // ============================================================================
+    // INITIALIZE STATIONS - Start stations based on configuration
+    // ============================================================================
 	
 #ifdef CONFIG_MIXED_STATIONS
 	// Initialize SimPager2 FIRST to test dual generator acquisition without resource pressure
 #ifdef ENABLE_PAGER2_STATION
-	pager2_station1.begin(time + random(1000));  // Start FIRST to test dual acquisition
+	pager2_station1.begin(time + random(1000));
 	pager2_station1.set_station_state(AUDIBLE);
-	
-	// DEBUG: Test dual generator acquisition capability
-	delay(2000);  // Wait for initialization to settle
-	pager2_station1.debug_test_dual_generator_acquisition();
 #endif
 
-	// Initialize CW station AFTER SimPager2 has claimed its dual generators
 #ifdef ENABLE_MORSE_STATION
-	cw_station1.begin(time + random(3000));  // Start after SimPager2
+	cw_station1.begin(time + random(3000));
 	cw_station1.set_station_state(AUDIBLE);
 #endif
 #endif
@@ -1164,36 +1090,8 @@ void loop()
 #endif
 
 #ifdef CONFIG_MINIMAL_CW
-	Serial.println("DEBUG: CONFIG_MINIMAL_CW - Initializing single CW station");
-	
-	Serial.println("DEBUG: Calling cw_station1.begin()");
 	cw_station1.begin(time + random(1000));
-	Serial.println("DEBUG: cw_station1.begin() completed");
-	
-	Serial.println("DEBUG: Setting cw_station1 to AUDIBLE state");
 	cw_station1.set_station_state(AUDIBLE);
-	Serial.println("DEBUG: cw_station1.set_station_state(AUDIBLE) completed");
-	
-	Serial.println("DEBUG: CONFIG_MINIMAL_CW initialization completed");
-	
-	// DEBUG: Force an immediate realization update to see if station acquires generator
-	Serial.println("DEBUG: Forcing realization update for single station");
-	realization_pool.step(time);
-	Serial.println("DEBUG: Forced realization step completed");
-	
-	// DEBUG: Check wave generator pool status
-	Serial.println("DEBUG: Wave generator pool status:");
-	for(int i = 0; i < 4; i++) {
-		Serial.print("  Generator ");
-		Serial.print(i);
-		Serial.print(": ");
-		Serial.println(realizer_stats[i] ? "USED" : "FREE");
-	}
-	
-	// DEBUG: Force dispatcher to update realization and see what happens
-	Serial.println("DEBUG: Forcing dispatcher realization update");
-	dispatcher1.update_realization();
-	Serial.println("DEBUG: Dispatcher realization update completed");
 #endif
 
 #ifdef CONFIG_DEV_LOW_RAM
@@ -1219,19 +1117,9 @@ void loop()
 	pager_test.begin(time + random(1000));
 	pager_test.set_station_state(AUDIBLE);
 #endif
-	Serial.println("DEBUG: Calling set_application(APP_SIMRADIO)");
 	set_application(APP_SIMRADIO, &display);
-	Serial.println("DEBUG: set_application(APP_SIMRADIO) completed");
 
-	Serial.println("DEBUG: Entering main while(true) loop");
-	static unsigned int loop_counter = 0;
 	while(true){
-		loop_counter++;
-		if (loop_counter % 1000 == 0) {  // Print every 1000 loops to avoid spam
-			Serial.print("DEBUG: Main loop iteration #");
-			Serial.println(loop_counter);
-		}
-		
 		unsigned long time = millis();
 				// Update signal meter decay (capacitor-like discharge)
 		signal_meter.update(time);

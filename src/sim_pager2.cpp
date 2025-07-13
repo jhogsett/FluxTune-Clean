@@ -59,23 +59,15 @@ bool SimPager2::begin(unsigned long time)
     
     // Step 1: Try to acquire first generator
     if(!common_begin(time, _fixed_freq)) {
-        Serial.println("DUAL MODE ERROR: Failed to acquire first generator");
         return false;  // Failed to get first generator
     }
     
     // Step 2: Try to acquire second generator
     if(!acquire_second_generator()) {
-        Serial.println("DUAL MODE ERROR: Failed to acquire second generator, releasing first");
         // CRITICAL: Release first generator since we failed to get both
         end();  // This releases the first generator
         return false;  // Failed to get second generator
     }
-    
-    Serial.println("DUAL MODE SUCCESS: Both generators acquired");
-    Serial.print("First generator realizer: ");
-    Serial.println(_realizer);
-    Serial.print("Second generator realizer: ");
-    Serial.println(_realizer_b);
     
     // Start pager transmission with repeat enabled
     _pager.start_pager_transmission(true);
@@ -180,7 +172,6 @@ void SimPager2::realize()
     // DUAL GENERATOR MODE: Control both generators simultaneously
     // Ensure we have both generators before proceeding
     if(_realizer == -1 || _realizer_b == -1) {
-        Serial.println("DUAL MODE ERROR: Missing generator in realize()");
         return;
     }
     
@@ -282,18 +273,14 @@ bool SimPager2::step(unsigned long time)
                 bool need_second = (_realizer_b == -1);
                 
                 if (need_first || need_second) {
-                    Serial.println("DUAL MODE: Reacquiring generators after silence");
-                    
                     // Try to acquire first generator if needed
                     if (need_first && !common_begin(time, _fixed_freq)) {
-                        Serial.println("DUAL MODE ERROR: Failed to reacquire first generator");
                         _active = false;
                         return true;
                     }
                     
                     // Try to acquire second generator if needed
                     if (need_second && !acquire_second_generator()) {
-                        Serial.println("DUAL MODE ERROR: Failed to reacquire second generator, releasing first");
                         // Release first generator if we just acquired it
                         if (need_first) {
                             end();
@@ -302,7 +289,6 @@ bool SimPager2::step(unsigned long time)
                         return true;
                     }
                     
-                    Serial.println("DUAL MODE SUCCESS: Both generators reacquired");
                     // CRITICAL: Force frequency update after reacquiring generators
                     force_frequency_update();
                 }
@@ -342,7 +328,6 @@ bool SimPager2::step(unsigned long time)
 
 #ifdef ENABLE_DUAL_GENERATOR
             // DUAL GENERATOR MODE: Release both generators during silent period
-            Serial.println("DUAL MODE: Releasing both generators during silence");
             
             // Silence both generators first
             if(_realizer != -1) {
@@ -433,32 +418,16 @@ void SimPager2::debug_print_tone_pair() const
 void SimPager2::debug_test_dual_generator_acquisition()
 {
     // DEBUG: Test if we can acquire both generators simultaneously
-    Serial.println("=== DUAL GENERATOR ACQUISITION TEST ===");
-    
-    // Show current state
-    Serial.print("Current first generator (realizer): ");
-    Serial.println(_realizer);
-    
-#if defined(ENABLE_SECOND_GENERATOR) || defined(ENABLE_DUAL_GENERATOR)
-    Serial.print("Current second generator (realizer_b): ");
-    Serial.println(_realizer_b);
-#endif
     
     // Test: Try to acquire first generator if we don't have it
     bool first_acquired = false;
     int original_first_realizer = _realizer;
     
     if (_realizer == -1) {
-        Serial.println("Attempting to acquire FIRST generator...");
         if (common_begin(millis(), _fixed_freq)) {
-            Serial.print("SUCCESS: First generator acquired, realizer = ");
-            Serial.println(_realizer);
             first_acquired = true;
-        } else {
-            Serial.println("FAILED: Could not acquire first generator");
         }
     } else {
-        Serial.println("First generator already acquired");
         first_acquired = true;
     }
     
@@ -468,57 +437,22 @@ void SimPager2::debug_test_dual_generator_acquisition()
     int original_second_realizer = _realizer_b;
     
     if (_realizer_b == -1) {
-        Serial.println("Attempting to acquire SECOND generator...");
         if (acquire_second_generator()) {
-            Serial.print("SUCCESS: Second generator acquired, realizer_b = ");
-            Serial.println(_realizer_b);
             second_acquired = true;
-        } else {
-            Serial.println("FAILED: Could not acquire second generator");
         }
     } else {
-        Serial.println("Second generator already acquired");
         second_acquired = true;
-    }
-    
-    // Report results
-    Serial.print("RESULT: First=");
-    Serial.print(first_acquired ? "OK" : "FAIL");
-    Serial.print(", Second=");
-    Serial.print(second_acquired ? "OK" : "FAIL");
-    Serial.print(", Both=");
-    Serial.println((first_acquired && second_acquired) ? "SUCCESS" : "FAILED");
-    
-    // Show wave generator pool status
-    Serial.println("Wave generator pool status:");
-    for (int i = 0; i < 4; i++) {
-        // We can't directly access pool internals, so just show our realizers
-        if (i == _realizer) {
-            Serial.print("  Generator ");
-            Serial.print(i);
-            Serial.println(": USED (first)");
-        } else if (i == _realizer_b) {
-            Serial.print("  Generator ");
-            Serial.print(i);
-            Serial.println(": USED (second)");
-        }
     }
     
     // Cleanup: Release any generators we acquired during test
     if (first_acquired && original_first_realizer == -1) {
-        Serial.println("Releasing first generator (acquired during test)");
         end(); // This releases the first generator
     }
     
     if (second_acquired && original_second_realizer == -1) {
-        Serial.println("Releasing second generator (acquired during test)");
         release_second_generator();
     }
-#else
-    Serial.println("Second generator support not compiled in");
 #endif
-    
-    Serial.println("=== END DUAL GENERATOR TEST ===");
 }
 
 void SimPager2::end()
