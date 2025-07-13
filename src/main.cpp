@@ -47,6 +47,10 @@
 #include "sim_pager.h"
 #endif
 
+#ifdef ENABLE_PAGER2_STATION
+#include "sim_pager2.h"
+#endif
+
 #ifdef ENABLE_JAMMER_STATION
 #include "sim_jammer.h"
 #endif
@@ -127,11 +131,42 @@ SignalMeter signal_meter;
 // ============================================================================
 // STATION CONFIGURATION - Conditional compilation based on station_config.h
 // ============================================================================
+//
+// *** MEMORY OPTIMIZATION: SHARED REALIZATION ARRAYS ***
+//
+// DESIGN PATTERN: Zero-copy array sharing between RealizationPool and StationManager
+// - Single realizations[] array serves both managers (eliminates duplicate station_pool[] arrays)
+// - StationManager constructor casts Realization* to SimTransmitter* (safe due to dual inheritance)
+// - Memory savings: 8-168 bytes per configuration depending on station count
+//
+// INHERITANCE REQUIREMENT: All station classes MUST inherit from BOTH:
+//   - SimTransmitter (for StationManager compatibility)
+//   - Realization (for RealizationPool compatibility)
+//
+// *** CRITICAL ARRAY SYNCHRONIZATION REQUIREMENTS ***
+//
+// When adding/removing stations or creating new configurations, you MUST update:
+//
+// 1. realizations[SIZE] array declaration (match actual station count)
+// 2. realization_stats[SIZE] array in conditional #ifdef block (lines ~590-602)
+// 3. RealizationPool constructor parameter (lines ~610-620)
+// 4. StationManager constructor parameter (lines ~570-580)
+//
+// Example: CONFIG_MIXED_STATIONS currently has 2 stations:
+//   - realizations[2] (defined in config sections below)
+//   - realization_stats[2] (defined around line 597)
+//   - RealizationPool(..., 2) and StationManager(realizations, 2)
+//
+// *** RESTART BUG WARNING ***
+// Mismatched array sizes cause continuous Arduino restarts!
+// Always verify station count matches ALL array declarations!
+//
+// ============================================================================
 
 #ifdef CONFIG_MIXED_STATIONS
-// DEFAULT: Mixed station types for testing and demonstration
+// Testing: CW + SimPager2 (dual wave generator) for dual-tone breakthrough testing
 #ifdef ENABLE_MORSE_STATION
-SimStation cw_station1(&wave_gen_pool, &signal_meter, 7002000.0, 11);
+SimStation cw_station1(&wave_gen_pool, &signal_meter, 7007000.0, 8);   // SLOW: 8 WPM to hold generators longer
 #endif
 #ifdef ENABLE_NUMBERS_STATION
 SimNumbers numbers_station1(&wave_gen_pool, &signal_meter, 7002700.0, 18);
@@ -146,40 +181,14 @@ SimJammer jammer_station1(&wave_gen_pool);
 SimPager pager_station1(&wave_gen_pool, &signal_meter, 146800000.0);
 #endif
 
-SimTransmitter *station_pool[4] = {
-#ifdef ENABLE_MORSE_STATION
-    &cw_station1,
+#ifdef ENABLE_PAGER2_STATION
+SimPager2 pager2_station1(&wave_gen_pool, &signal_meter, 7000000.0);  // Testing dual wave generator - moved well above other stations
 #endif
-#ifdef ENABLE_NUMBERS_STATION
-    &numbers_station1,
-#endif
-#ifdef ENABLE_RTTY_STATION
-    &rtty_station1,
-#endif
-#ifdef ENABLE_JAMMER_STATION
-    &jammer_station1,
-#endif
-#ifdef ENABLE_PAGER_STATION
-    &pager_station1
-#endif
-};
 
-Realization *realizations[4] = {
-#ifdef ENABLE_MORSE_STATION
-    &cw_station1,
-#endif
-#ifdef ENABLE_NUMBERS_STATION
-    &numbers_station1, 
-#endif
-#ifdef ENABLE_RTTY_STATION
-    &rtty_station1,
-#endif
-#ifdef ENABLE_JAMMER_STATION
-    &jammer_station1,
-#endif
-#ifdef ENABLE_PAGER_STATION
-    &pager_station1
-#endif
+// Shared array - serves as both station pool and realizations  
+Realization *realizations[2] = {
+    &cw_station1,       // [0] - CW station  
+    &pager2_station1    // [1] - Dual-tone pager (testing)
 };
 #endif
 
@@ -191,13 +200,7 @@ SimStation cw_station2(&wave_gen_pool, &signal_meter, 7003500.0, 16);  // 16 WPM
 SimStation cw_station3(&wave_gen_pool, &signal_meter, 7004200.0, 18);  // 18 WPM
 SimStation cw_station4(&wave_gen_pool, &signal_meter, 7005800.0, 22);  // 22 WPM
 
-SimTransmitter *station_pool[4] = {
-    &cw_station1,
-    &cw_station2,
-    &cw_station3,
-    &cw_station4
-};
-
+// Shared array - serves as both station pool and realizations
 Realization *realizations[4] = {
     &cw_station1,
     &cw_station2,
@@ -213,13 +216,7 @@ SimStation cw_station2(&wave_gen_pool, &signal_meter, 7003000.0, 15);
 SimStation cw_station3(&wave_gen_pool, &signal_meter, 7004000.0, 20);
 SimStation cw_station4(&wave_gen_pool, &signal_meter, 7005000.0, 25);
 
-SimTransmitter *station_pool[4] = {
-    &cw_station1,
-    &cw_station2,
-    &cw_station3,
-    &cw_station4
-};
-
+// Shared array - serves as both station pool and realizations
 Realization *realizations[4] = {
     &cw_station1,
     &cw_station2,
@@ -236,14 +233,7 @@ SimStation cw_station3(&wave_gen_pool, &signal_meter, 7002900.0, 11, 95);   // N
 SimStation cw_station4(&wave_gen_pool, &signal_meter, 7003600.0, 15, 40);   // Novice/General portion, experienced new ham
 SimStation cw_station5(&wave_gen_pool, &signal_meter, 7004300.0, 25, 80);   // Novice/General portion, experienced tired ham
 
-SimTransmitter *station_pool[5] = {
-    &cw_station1,
-    &cw_station2,
-    &cw_station3,
-    &cw_station4,
-    &cw_station5
-};
-
+// Shared array - serves as both station pool and realizations
 Realization *realizations[5] = {
     &cw_station1,
     &cw_station2,
@@ -335,13 +325,7 @@ SimNumbers numbers_station2(&wave_gen_pool, &signal_meter, 7003700.0, 15);
 SimNumbers numbers_station3(&wave_gen_pool, &signal_meter, 7004700.0, 18);
 SimNumbers numbers_station4(&wave_gen_pool, &signal_meter, 7005700.0, 22);
 
-SimTransmitter *station_pool[4] = {
-    &numbers_station1,
-    &numbers_station2,
-    &numbers_station3,
-    &numbers_station4
-};
-
+// Shared array - serves as both station pool and realizations
 Realization *realizations[4] = {
     &numbers_station1,
     &numbers_station2,
@@ -357,13 +341,7 @@ SimPager pager_station2(&wave_gen_pool, &signal_meter, 7007000.0);
 SimPager pager_station3(&wave_gen_pool, &signal_meter, 7008000.0);
 SimPager pager_station4(&wave_gen_pool, &signal_meter, 7009000.0);
 
-SimTransmitter *station_pool[4] = {
-    &pager_station1,
-    &pager_station2,
-    &pager_station3,
-    &pager_station4
-};
-
+// Shared array - serves as both station pool and realizations
 Realization *realizations[4] = {
     &pager_station1,
     &pager_station2,
@@ -379,13 +357,7 @@ SimRTTY rtty_station2(&wave_gen_pool, &signal_meter, 7005100.0);
 SimRTTY rtty_station3(&wave_gen_pool, &signal_meter, 7006100.0);
 SimRTTY rtty_station4(&wave_gen_pool, &signal_meter, 7007100.0);
 
-SimTransmitter *station_pool[4] = {
-    &rtty_station1,
-    &rtty_station2,
-    &rtty_station3,
-    &rtty_station4
-};
-
+// Shared array - serves as both station pool and realizations
 Realization *realizations[4] = {
     &rtty_station1,
     &rtty_station2,
@@ -401,13 +373,7 @@ SimJammer jammer_station2(&wave_gen_pool);
 SimJammer jammer_station3(&wave_gen_pool);
 SimJammer jammer_station4(&wave_gen_pool);
 
-SimTransmitter *station_pool[4] = {
-    &jammer_station1,
-    &jammer_station2,
-    &jammer_station3,
-    &jammer_station4
-};
-
+// Shared array - serves as both station pool and realizations
 Realization *realizations[4] = {
     &jammer_station1,
     &jammer_station2,
@@ -426,13 +392,10 @@ Realization *realizations[4] = {
 //  80 = High fist quality (current Field Day "tired operator" setting)
 // 255 = Maximum bad fist (extreme case)
 
-SimStation cw_station1(&wave_gen_pool, &signal_meter, 7006000.0, 25, (byte)255);  // Field Day Station test: MAXIMUM fist quality for testing - CAST TO BYTE!
+SimStation cw_station1(&wave_gen_pool, &signal_meter, 7000000.0, 25, 25);  // Field Day Station test: MAXIMUM fist quality for testing - MOVED TO 7.000 MHz to match VFO A default!
 
-SimTransmitter *station_pool[1] = {  // Only 1 entry for minimal config
-    &cw_station1
-};
-
-Realization *realizations[1] = {  // Only 1 entry for minimal config
+// Shared array - serves as both station pool and realizations
+Realization *realizations[1] = {  // Back to single station for minimal config
     &cw_station1
 };
 #endif
@@ -449,7 +412,8 @@ SimNumbers numbers_station1(&wave_gen_pool, &signal_meter, 7002700.0, 18);
 SimTest test_station(&wave_gen_pool, &signal_meter, 7005000.0, 10.0, 440.0, 560.0);  // 10 Hz toggle, 440 Hz and 560 Hz tones
 #endif
 
-SimTransmitter *station_pool[3] = {
+SimTransmitter *station_pool[3] = {  // *** WARNING: CONFIG_DEV_LOW_RAM may have different station count! ***
+                                  // Verify actual station count matches array size [3]!
 #ifdef ENABLE_MORSE_STATION
     &cw_station1,
 #endif
@@ -461,7 +425,7 @@ SimTransmitter *station_pool[3] = {
 #endif
 };
 
-Realization *realizations[3] = {
+Realization *realizations[3] = {  // *** WARNING: CONFIG_DEV_LOW_RAM array size must match station_pool[3] above! ***
 #ifdef ENABLE_MORSE_STATION
     &cw_station1,
 #endif
@@ -485,7 +449,9 @@ SimStation cw_station3(&wave_gen_pool, &signal_meter, 7003500.0, 16, 80);   // W
 // SimStation cw_station4(&wave_gen_pool, &signal_meter, 7004500.0, 25, 25);   // DL4JKL: European, good operator but tired
 // SimStation cw_station5(&wave_gen_pool, &signal_meter, 7000500.0, 19, 60);   // VE5MNO: Canadian, rusty on CW but determined
 
-SimTransmitter *station_pool[3] = {
+SimTransmitter *station_pool[3] = {  // *** WARNING: CONFIG_FILE_PILE_UP currently has 3 stations, but could have 5! ***
+                                  // Verify actual station count matches array size [3]!
+                                  // If enabling all 5 pile-up stations, change to [5]!
     &cw_station1,
     &cw_station2, 
     &cw_station3
@@ -493,7 +459,8 @@ SimTransmitter *station_pool[3] = {
     // &cw_station5
 };
 
-Realization *realizations[3] = {
+Realization *realizations[3] = {  // *** WARNING: CONFIG_FILE_PILE_UP array size must match station_pool[3] above! ***
+                              // If enabling all 5 pile-up stations, change to [5]!
     &cw_station1,
     &cw_station2,
     &cw_station3
@@ -542,6 +509,19 @@ Realization *realizations[1] = {
 };
 #endif
 
+#ifdef CONFIG_PAGER2_TEST
+// Test config with original SimPager to isolate if issue is config or SimPager2 class
+SimPager pager_test(&wave_gen_pool, &signal_meter, 146800000.0);  // 2 meter pager frequency
+
+SimTransmitter *station_pool[1] = {
+    &pager_test
+};
+
+Realization *realizations[1] = {
+    &pager_test
+};
+#endif
+
 // ============================================================================
 // REALIZATION POOL - Initialize with configured realizations
 // ============================================================================
@@ -551,6 +531,8 @@ Realization *realizations[1] = {
 bool realization_stats[1] = {false};
 #elif defined(CONFIG_TEST_PERFORMANCE)
 bool realization_stats[1] = {false};  // Single test station
+#elif defined(CONFIG_PAGER2_TEST)
+bool realization_stats[1] = {false};  // Single dual-tone pager station
 #elif defined(CONFIG_DEV_LOW_RAM)
 bool realization_stats[3] = {false, false, false};
 #elif defined(CONFIG_FIVE_CW_RESOURCE_TEST)
@@ -559,28 +541,52 @@ bool realization_stats[5] = {false, false, false, false, false};  // 5 stations 
 bool realization_stats[21] = {false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false};  // 21 stations for comprehensive Nano Every stress test
 #elif defined(CONFIG_FILE_PILE_UP)
 bool realization_stats[3] = {false, false, false};  // 3 stations for pile-up debug
+#elif defined(CONFIG_MIXED_STATIONS)
+bool realization_stats[2] = {false, false};  // *** ACTUAL STATION COUNT: 2 stations (cw + pager2) ***
 #else
 bool realization_stats[4] = {false, false, false, false};
 #endif
 
 #ifdef CONFIG_MINIMAL_CW
-RealizationPool realization_pool(realizations, realization_stats, 1);  // Only 1 station for minimal config
+RealizationPool realization_pool(realizations, realization_stats, 1);  // *** CRITICAL: Count must match arrays above! ***
+#elif defined(CONFIG_TEST_PERFORMANCE)
+RealizationPool realization_pool(realizations, realization_stats, 1);  // *** CRITICAL: Count must match arrays above! ***
+#elif defined(CONFIG_PAGER2_TEST)
+RealizationPool realization_pool(realizations, realization_stats, 1);  // *** CRITICAL: Count must match arrays above! ***
 #elif defined(CONFIG_DEV_LOW_RAM)
-RealizationPool realization_pool(realizations, realization_stats, 3);  // 3 stations for development config
+RealizationPool realization_pool(realizations, realization_stats, 3);  // *** CRITICAL: Count must match arrays above! ***
 #elif defined(CONFIG_FIVE_CW_RESOURCE_TEST)
-RealizationPool realization_pool(realizations, realization_stats, 5);  // 5 stations competing for 4 wave generators
+RealizationPool realization_pool(realizations, realization_stats, 5);  // *** CRITICAL: Count must match arrays above! ***
 #elif defined(CONFIG_TEN_CW)
-RealizationPool realization_pool(realizations, realization_stats, 21);  // 21 stations competing for 4 wave generators
+RealizationPool realization_pool(realizations, realization_stats, 21);  // *** CRITICAL: Count must match arrays above! ***
 #elif defined(CONFIG_FILE_PILE_UP)
-RealizationPool realization_pool(realizations, realization_stats, 3);  // 3 stations for pile-up debug
+RealizationPool realization_pool(realizations, realization_stats, 3);  // *** CRITICAL: Count must match arrays above! ***
+#elif defined(CONFIG_MIXED_STATIONS)
+RealizationPool realization_pool(realizations, realization_stats, 2);  // *** CRITICAL: Count must match arrays above! ***
 #else
-RealizationPool realization_pool(realizations, realization_stats, 4);  // 4 stations for all other configs
+RealizationPool realization_pool(realizations, realization_stats, 4);  // *** CRITICAL: Count must match arrays above! ***
 #endif
 
 // ============================================================================
 // STATION MANAGER - Initialize with configured station pool
 // ============================================================================
-StationManager station_manager(station_pool);
+#ifdef CONFIG_MINIMAL_CW
+StationManager station_manager(realizations, 1);
+#elif defined(CONFIG_MIXED_STATIONS)
+StationManager station_manager(realizations, 2);  // cw_station1 + pager2_station1
+#elif defined(CONFIG_FOUR_CW) || defined(CONFIG_FOUR_NUMBERS) || defined(CONFIG_FOUR_PAGER) || defined(CONFIG_FOUR_RTTY) || defined(CONFIG_FOUR_JAMMER) || defined(CONFIG_CW_CLUSTER)
+StationManager station_manager(realizations, 4);
+#elif defined(CONFIG_FIVE_CW) || defined(CONFIG_FIVE_CW_RESOURCE_TEST)
+StationManager station_manager(realizations, 5);
+#elif defined(CONFIG_DEV_LOW_RAM) || defined(CONFIG_FILE_PILE_UP)
+StationManager station_manager(station_pool, 3);
+#elif defined(CONFIG_TEN_CW)
+StationManager station_manager(station_pool, 21);
+#elif defined(CONFIG_TEST_PERFORMANCE)
+StationManager station_manager(station_pool, 1);
+#else
+StationManager station_manager(station_pool, 4);  // Default fallback
+#endif
 
 VFO vfoa("VFO A",   7000000.0, 10, &realization_pool);
 VFO vfob("VFO B",  14000000.0, 10, &realization_pool);
@@ -642,6 +648,7 @@ void setup_buttons(){
 
 void setup(){
 	Serial.begin(115200);
+	
 	randomizer.randomize();
 
 #ifdef USE_EEPROM_TABLES
@@ -654,7 +661,6 @@ void setup(){
 #endif
 
 	load_save_data();
-
 	setup_leds();
 	setup_display();
 	setup_signal_meter();
@@ -673,6 +679,7 @@ void setup(){
 	AD3.setFrequency((MD_AD9833::channel_t)0, 0.1);
 	AD3.setFrequency((MD_AD9833::channel_t)1, 0.1);
 	AD3.setMode(MD_AD9833::MODE_SINE);
+	
 	AD4.begin();
 	AD4.setFrequency((MD_AD9833::channel_t)0, 0.1);
 	AD4.setFrequency((MD_AD9833::channel_t)1, 0.1);
@@ -794,37 +801,21 @@ void loop()
 #endif
 
     unsigned long time = millis();
-    // panel_leds.begin(time, LEDHandler::STYLE_PLAIN | LEDHandler::STYLE_BLANKING, DEFAULT_PANEL_LEDS_SHOW_TIME, DEFAULT_PANEL_LEDS_BLANK_TIME);
-	
-	// ============================================================================
-	// INITIALIZE 12-STATION DYNAMIC POOL	// Start stations based on configuration
-	// ============================================================================
+    
+    // ============================================================================
+    // INITIALIZE STATIONS - Start stations based on configuration
+    // ============================================================================
 	
 #ifdef CONFIG_MIXED_STATIONS
-	// Initialize mixed station types
-#ifdef ENABLE_MORSE_STATION
-	cw_station1.begin(time + random(1000));
-	cw_station1.set_station_state(AUDIBLE);
-#endif
-	
-#ifdef ENABLE_NUMBERS_STATION
-	numbers_station1.begin(time + random(1000));
-	numbers_station1.set_station_state(AUDIBLE);
-#endif
-	
-#ifdef ENABLE_RTTY_STATION
-	rtty_station1.begin(time + random(1000));
-	rtty_station1.set_station_state(AUDIBLE);
+	// Initialize SimPager2 FIRST to test dual generator acquisition without resource pressure
+#ifdef ENABLE_PAGER2_STATION
+	pager2_station1.begin(time + random(1000));
+	pager2_station1.set_station_state(AUDIBLE);
 #endif
 
-#ifdef ENABLE_JAMMER_STATION
-	jammer_station1.begin(time + random(1000), 14004100.0);
-	jammer_station1.set_station_state(AUDIBLE);
-#endif
-	
-#ifdef ENABLE_PAGER_STATION
-	pager_station1.begin(time + random(1000));
-	pager_station1.set_station_state(AUDIBLE);
+#ifdef ENABLE_MORSE_STATION
+	cw_station1.begin(time + random(3000));
+	cw_station1.set_station_state(AUDIBLE);
 #endif
 #endif
 
@@ -1060,7 +1051,6 @@ void loop()
 #endif
 
 #ifdef CONFIG_MINIMAL_CW
-	// Initialize single CW station
 	cw_station1.begin(time + random(1000));
 	cw_station1.set_station_state(AUDIBLE);
 #endif
@@ -1081,6 +1071,12 @@ void loop()
 	test_station.begin(time + random(1000));
 	test_station.set_station_state(AUDIBLE);
 #endif
+#endif
+
+#ifdef CONFIG_PAGER2_TEST
+	// Initialize original SimPager test station to isolate issue
+	pager_test.begin(time + random(1000));
+	pager_test.set_station_state(AUDIBLE);
 #endif
 	set_application(APP_SIMRADIO, &display);
 

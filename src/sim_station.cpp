@@ -180,17 +180,29 @@ void SimStation::generate_random_callsign(char *callsign_buffer, size_t buffer_s
     // Uses doubled digits (00, 11, 22, etc.) to avoid generating real callsigns
     // This is like using "555" phone numbers in movies - sounds authentic but can't be real
     // Format: [W/K/N][XX][AAA] where XX = doubled digit (00-99)
-      const char *prefixes[] = {"W", "K", "N"};
+    const char *prefixes[] = {"W", "K", "N"};
 
     int prefix_idx = random(3);
     int digit = random(10);  // 0-9, will be doubled
     int suffix_len = 2 + random(2);  // 2 or 3 letters
 
-    // Use doubled digit to ensure fictional callsign
-    sprintf(callsign_buffer, "%s%d%d", prefixes[prefix_idx], digit, digit);    for(int i = 0; i < suffix_len; i++) {
-        char letter[2] = {(char)('A' + random(26)), '\0'};
-        strcat(callsign_buffer, letter);
+    // Ensure we don't overflow the buffer (prefix + 2 digits + suffix + null)
+    if (suffix_len > (int)buffer_size - 4) {
+        suffix_len = buffer_size - 4;
     }
+    if (suffix_len < 0) suffix_len = 0;
+
+    // Use doubled digit to ensure fictional callsign
+    snprintf(callsign_buffer, buffer_size, "%s%d%d", prefixes[prefix_idx], digit, digit);
+    
+    for(int i = 0; i < suffix_len; i++) {
+        if (strlen(callsign_buffer) >= buffer_size - 1) break; // Prevent overflow
+        char letter[2] = {(char)('A' + random(26)), '\0'};
+        strncat(callsign_buffer, letter, buffer_size - strlen(callsign_buffer) - 1);
+    }
+    
+    // Ensure null termination
+    callsign_buffer[buffer_size - 1] = '\0';
 }
 
 void SimStation::generate_cq_message()
@@ -198,8 +210,11 @@ void SimStation::generate_cq_message()
     char callsign[12];  // Increased buffer size for safety (e.g., "K99ABCD" + null)
     generate_random_callsign(callsign, sizeof(callsign));
 
-    // Generate CQ message using configurable format
-    sprintf(_generated_message, CQ_MESSAGE_FORMAT, callsign, callsign);
+    // Generate CQ message using configurable format with safe sprintf
+    snprintf(_generated_message, MESSAGE_BUFFER, CQ_MESSAGE_FORMAT, callsign, callsign);
+    
+    // Ensure null termination
+    _generated_message[MESSAGE_BUFFER - 1] = '\0';
 }
 
 void SimStation::apply_operator_frustration_drift()
