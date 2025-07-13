@@ -21,7 +21,7 @@
 // ===== TEST CONFIGURATIONS =====
 // #define CONFIG_FOUR_CW          // Four CW/Morse stations for CW testing
 // #define CONFIG_FIVE_CW          // Five CW/Morse stations for simulating Field Day traffic
-// #define CONFIG_TEN_CW           // 21-station stress test for Nano Every (10 CW + 5 Numbers + 4 RTTY + 2 Pager)
+#define CONFIG_TEN_CW           // 21-station stress test for Nano Every (10 CW + 5 Numbers + 4 RTTY + 2 Pager)
 // #define CONFIG_TEST_PERFORMANCE  // Single test station for measuring main loop performance
 // #define CONFIG_FILE_PILE_UP     // Five CW/Morse stations simulating Scarborough Reef pile-up (BS77H variations)
 // #define CONFIG_FOUR_NUMBERS     // Four Numbers stations for spooky testing
@@ -31,7 +31,7 @@
 // #define CONFIG_PAGER2_TEST      // Single dual-tone pager station for testing dual wave generators
 // #define CONFIG_MINIMAL_CW       // Single CW station (minimal memory) - TESTING COUNT-BASED FIX!
 // #define CONFIG_FIVE_CW          // Five CW/Morse stations for simulating Field Day traffic - TESTING BUG FIX!
-#define CONFIG_MIXED_STATIONS   // Default: CW + SimPager2 dual-tone breakthrough!
+// #define CONFIG_MIXED_STATIONS   // Default: CW + SimPager2 dual-tone breakthrough!
 
 // ===== LISTENING PLEASURE CONFIGURATION =====
 // #define CONFIG_CW_CLUSTER       // Four CW stations clustered in 40m for listening pleasure

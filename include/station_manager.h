@@ -2,6 +2,7 @@
 #define STATION_MANAGER_H
 
 #include "sim_transmitter.h"
+#include "realization.h"
 #include <stdint.h>
 
 // Maximum stations that StationManager can handle internally  
@@ -23,6 +24,10 @@ class StationManager {
 public:
     // Simple, standard approach: array pointer + count (like every other class)
     StationManager(SimTransmitter* station_ptrs[], int actual_station_count);
+    
+    // OPTIMIZATION: Share realizations array with RealizationPool to eliminate duplicate arrays
+    StationManager(Realization* shared_stations[], int actual_station_count);
+    
     void updateStations(uint32_t vfo_freq);
     void allocateAD9833();
     void recycleDormantStations(uint32_t vfo_freq);

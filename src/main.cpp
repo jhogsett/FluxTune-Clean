@@ -174,11 +174,7 @@ SimPager pager_station1(&wave_gen_pool, &signal_meter, 146800000.0);
 SimPager2 pager2_station1(&wave_gen_pool, &signal_meter, 7000000.0);  // Testing dual wave generator - moved well above other stations
 #endif
 
-SimTransmitter *station_pool[2] = {
-    &cw_station1,       // [0] - CW station
-    &pager2_station1    // [1] - Dual-tone pager (testing)
-};
-
+// Shared array - serves as both station pool and realizations  
 Realization *realizations[2] = {
     &cw_station1,       // [0] - CW station  
     &pager2_station1    // [1] - Dual-tone pager (testing)
@@ -193,13 +189,7 @@ SimStation cw_station2(&wave_gen_pool, &signal_meter, 7003500.0, 16);  // 16 WPM
 SimStation cw_station3(&wave_gen_pool, &signal_meter, 7004200.0, 18);  // 18 WPM
 SimStation cw_station4(&wave_gen_pool, &signal_meter, 7005800.0, 22);  // 22 WPM
 
-SimTransmitter *station_pool[4] = {
-    &cw_station1,
-    &cw_station2,
-    &cw_station3,
-    &cw_station4
-};
-
+// Shared array - serves as both station pool and realizations
 Realization *realizations[4] = {
     &cw_station1,
     &cw_station2,
@@ -215,13 +205,7 @@ SimStation cw_station2(&wave_gen_pool, &signal_meter, 7003000.0, 15);
 SimStation cw_station3(&wave_gen_pool, &signal_meter, 7004000.0, 20);
 SimStation cw_station4(&wave_gen_pool, &signal_meter, 7005000.0, 25);
 
-SimTransmitter *station_pool[4] = {
-    &cw_station1,
-    &cw_station2,
-    &cw_station3,
-    &cw_station4
-};
-
+// Shared array - serves as both station pool and realizations
 Realization *realizations[4] = {
     &cw_station1,
     &cw_station2,
@@ -238,14 +222,7 @@ SimStation cw_station3(&wave_gen_pool, &signal_meter, 7002900.0, 11, 95);   // N
 SimStation cw_station4(&wave_gen_pool, &signal_meter, 7003600.0, 15, 40);   // Novice/General portion, experienced new ham
 SimStation cw_station5(&wave_gen_pool, &signal_meter, 7004300.0, 25, 80);   // Novice/General portion, experienced tired ham
 
-SimTransmitter *station_pool[5] = {
-    &cw_station1,
-    &cw_station2,
-    &cw_station3,
-    &cw_station4,
-    &cw_station5
-};
-
+// Shared array - serves as both station pool and realizations
 Realization *realizations[5] = {
     &cw_station1,
     &cw_station2,
@@ -337,13 +314,7 @@ SimNumbers numbers_station2(&wave_gen_pool, &signal_meter, 7003700.0, 15);
 SimNumbers numbers_station3(&wave_gen_pool, &signal_meter, 7004700.0, 18);
 SimNumbers numbers_station4(&wave_gen_pool, &signal_meter, 7005700.0, 22);
 
-SimTransmitter *station_pool[4] = {
-    &numbers_station1,
-    &numbers_station2,
-    &numbers_station3,
-    &numbers_station4
-};
-
+// Shared array - serves as both station pool and realizations
 Realization *realizations[4] = {
     &numbers_station1,
     &numbers_station2,
@@ -359,13 +330,7 @@ SimPager pager_station2(&wave_gen_pool, &signal_meter, 7007000.0);
 SimPager pager_station3(&wave_gen_pool, &signal_meter, 7008000.0);
 SimPager pager_station4(&wave_gen_pool, &signal_meter, 7009000.0);
 
-SimTransmitter *station_pool[4] = {
-    &pager_station1,
-    &pager_station2,
-    &pager_station3,
-    &pager_station4
-};
-
+// Shared array - serves as both station pool and realizations
 Realization *realizations[4] = {
     &pager_station1,
     &pager_station2,
@@ -381,13 +346,7 @@ SimRTTY rtty_station2(&wave_gen_pool, &signal_meter, 7005100.0);
 SimRTTY rtty_station3(&wave_gen_pool, &signal_meter, 7006100.0);
 SimRTTY rtty_station4(&wave_gen_pool, &signal_meter, 7007100.0);
 
-SimTransmitter *station_pool[4] = {
-    &rtty_station1,
-    &rtty_station2,
-    &rtty_station3,
-    &rtty_station4
-};
-
+// Shared array - serves as both station pool and realizations
 Realization *realizations[4] = {
     &rtty_station1,
     &rtty_station2,
@@ -403,13 +362,7 @@ SimJammer jammer_station2(&wave_gen_pool);
 SimJammer jammer_station3(&wave_gen_pool);
 SimJammer jammer_station4(&wave_gen_pool);
 
-SimTransmitter *station_pool[4] = {
-    &jammer_station1,
-    &jammer_station2,
-    &jammer_station3,
-    &jammer_station4
-};
-
+// Shared array - serves as both station pool and realizations
 Realization *realizations[4] = {
     &jammer_station1,
     &jammer_station2,
@@ -430,10 +383,7 @@ Realization *realizations[4] = {
 
 SimStation cw_station1(&wave_gen_pool, &signal_meter, 7000000.0, 25, 25);  // Field Day Station test: MAXIMUM fist quality for testing - MOVED TO 7.000 MHz to match VFO A default!
 
-SimTransmitter *station_pool[1] = {  // Back to single station for minimal config
-    &cw_station1
-};
-
+// Shared array - serves as both station pool and realizations
 Realization *realizations[1] = {  // Back to single station for minimal config
     &cw_station1
 };
@@ -610,13 +560,13 @@ RealizationPool realization_pool(realizations, realization_stats, 4);  // *** CR
 // STATION MANAGER - Initialize with configured station pool
 // ============================================================================
 #ifdef CONFIG_MINIMAL_CW
-StationManager station_manager(station_pool, 1);
+StationManager station_manager(realizations, 1);
 #elif defined(CONFIG_MIXED_STATIONS)
-StationManager station_manager(station_pool, 2);  // cw_station1 + pager2_station1
+StationManager station_manager(realizations, 2);  // cw_station1 + pager2_station1
 #elif defined(CONFIG_FOUR_CW) || defined(CONFIG_FOUR_NUMBERS) || defined(CONFIG_FOUR_PAGER) || defined(CONFIG_FOUR_RTTY) || defined(CONFIG_FOUR_JAMMER) || defined(CONFIG_CW_CLUSTER)
-StationManager station_manager(station_pool, 4);
+StationManager station_manager(realizations, 4);
 #elif defined(CONFIG_FIVE_CW) || defined(CONFIG_FIVE_CW_RESOURCE_TEST)
-StationManager station_manager(station_pool, 5);
+StationManager station_manager(realizations, 5);
 #elif defined(CONFIG_DEV_LOW_RAM) || defined(CONFIG_FILE_PILE_UP)
 StationManager station_manager(station_pool, 3);
 #elif defined(CONFIG_TEN_CW)

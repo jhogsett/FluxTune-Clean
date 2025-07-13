@@ -24,6 +24,31 @@ StationManager::StationManager(SimTransmitter* station_ptrs[], int actual_statio
     last_tuning_time = 0;
 }
 
+// OPTIMIZATION: Constructor that shares realizations array to eliminate duplicate arrays
+StationManager::StationManager(Realization* shared_stations[], int actual_station_count) 
+    : actual_station_count(actual_station_count) {
+    // Since Realization* can be cast to SimTransmitter* (inheritance), we can reuse the array
+    for (int i = 0; i < actual_station_count; ++i) {
+        stations[i] = static_cast<SimTransmitter*>(shared_stations[i]);
+        stations[i]->setActive(false);
+        stations[i]->set_station_state(DORMANT);
+    }
+    // Initialize remaining slots to nullptr (not accessed)
+    for (int i = actual_station_count; i < MAX_STATIONS; ++i) {
+        stations[i] = nullptr;
+    }
+    for (int i = 0; i < MAX_AD9833; ++i) {
+        ad9833_assignment[i] = -1;
+    }
+    
+    // Initialize dynamic pipelining state
+    pipeline_enabled = false;
+    last_vfo_freq = 0;
+    pipeline_center_freq = 0;
+    tuning_direction = 0;
+    last_tuning_time = 0;
+}
+
 void StationManager::updateStations(uint32_t vfo_freq) {
     if (pipeline_enabled) {
         updatePipeline(vfo_freq);
