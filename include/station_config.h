@@ -8,7 +8,7 @@
 // Choose ONE configuration mode by uncommenting it
 
 // ===== PRODUCTION CONFIGURATION =====
-// #define CONFIG_MIXED_STATIONS    // Default: All different station types
+#define CONFIG_MIXED_STATIONS    // Default: All different station types
 
 // ===== DEVELOPMENT CONFIGURATION =====  
 // #define CONFIG_DEV_LOW_RAM       // Development: Minimal RAM usage for development work
@@ -20,7 +20,7 @@
 
 // ===== TEST CONFIGURATIONS =====
 // #define CONFIG_FOUR_CW          // Four CW/Morse stations for CW testing
-#define CONFIG_FIVE_CW          // Five CW/Morse stations for simulating Field Day traffic
+// #define CONFIG_FIVE_CW          // Five CW/Morse stations for simulating Field Day traffic
 // #define CONFIG_TEN_CW           // 21-station stress test for Nano Every (10 CW + 5 Numbers + 4 RTTY + 2 Pager)
 // #define CONFIG_TEST_PERFORMANCE  // Single test station for measuring main loop performance
 // #define CONFIG_FILE_PILE_UP     // Five CW/Morse stations simulating Scarborough Reef pile-up (BS77H variations)
@@ -28,7 +28,8 @@
 // #define CONFIG_FOUR_PAGER       // Four Pager stations for digital testing
 // #define CONFIG_FOUR_RTTY        // Four RTTY stations for RTTY testing
 // #define CONFIG_FOUR_JAMMER      // Four Jammer stations for interference testing
-// #define CONFIG_MINIMAL_CW       // Single CW station (minimal memory)
+// #define CONFIG_PAGER2_TEST      // Single dual-tone pager station for testing dual wave generators
+// #define CONFIG_MINIMAL_CW       // Single CW station (minimal memory) - CONFIRMED: Single station causes restarts
 
 // ===== LISTENING PLEASURE CONFIGURATION =====
 // #define CONFIG_CW_CLUSTER       // Four CW stations clustered in 40m for listening pleasure
@@ -57,13 +58,14 @@
 
 // ===== CONFIGURATION IMPLEMENTATION =====
 #ifdef CONFIG_MIXED_STATIONS
-    // Production: Mixed station types (default)
+    // Testing: CW + SimPager (original) + SimPager2 (dual) for direct comparison
     #define ENABLE_MORSE_STATION    // Basic CW/Morse station (SimStation)
-    #define ENABLE_NUMBERS_STATION  // Numbers Station (SimNumbers) 
-    #define ENABLE_PAGER_STATION    // Pager Station (SimPager)
-    #define ENABLE_RTTY_STATION     // RTTY Station (SimRTTY)
-    // NOTE: To enable jammer, comment out RTTY and uncomment below:
-    // #define ENABLE_JAMMER_STATION   // Jammer Station (SimJammer) - replaces RTTY
+    // #define ENABLE_NUMBERS_STATION  // Numbers Station (SimNumbers) - REMOVED
+    // #define ENABLE_PAGER_STATION    // Pager Station (SimPager) - TEMPORARILY DISABLED for SimPager2 testing
+    // #define ENABLE_RTTY_STATION     // RTTY Station (SimRTTY) - REPLACED with SimPager2
+    #define ENABLE_PAGER2_STATION   // SimPager2 (dual wave generator) - TESTING
+    // NOTE: To enable jammer, comment out PAGER2 and uncomment below:
+    // #define ENABLE_JAMMER_STATION   // Jammer Station (SimJammer) - replaces PAGER2
 #endif
 
 #ifdef CONFIG_DEV_LOW_RAM
@@ -119,6 +121,12 @@
     #define ENABLE_FOUR_PAGER_STATIONS
     #define ENABLE_PAGER_STATION
     // Other stations disabled for focused Pager testing
+#endif
+
+#ifdef CONFIG_PAGER2_TEST
+    // Test: Single original pager station to isolate CONFIG_PAGER2_TEST vs SimPager2 issue
+    #define ENABLE_PAGER_STATION
+    // Other stations disabled for focused pager testing
 #endif
 
 #ifdef CONFIG_FOUR_RTTY

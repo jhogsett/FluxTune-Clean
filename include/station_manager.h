@@ -8,7 +8,7 @@
 #ifdef CONFIG_TEN_CW
 #define MAX_STATIONS 21
 #elif defined(CONFIG_MIXED_STATIONS)
-#define MAX_STATIONS 4
+#define MAX_STATIONS 3  // Updated to match actual station count
 #elif defined(CONFIG_FIVE_CW) || defined(CONFIG_FIVE_CW_RESOURCE_TEST)
 #define MAX_STATIONS 5
 #elif defined(CONFIG_FOUR_CW) || defined(CONFIG_FOUR_NUMBERS) || defined(CONFIG_FOUR_PAGER) || defined(CONFIG_FOUR_RTTY) || defined(CONFIG_FOUR_JAMMER) || defined(CONFIG_CW_CLUSTER)

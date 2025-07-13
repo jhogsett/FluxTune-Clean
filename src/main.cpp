@@ -47,6 +47,10 @@
 #include "sim_pager.h"
 #endif
 
+#ifdef ENABLE_PAGER2_STATION
+#include "sim_pager2.h"
+#endif
+
 #ifdef ENABLE_JAMMER_STATION
 #include "sim_jammer.h"
 #endif
@@ -129,9 +133,10 @@ SignalMeter signal_meter;
 // ============================================================================
 
 #ifdef CONFIG_MIXED_STATIONS
-// DEFAULT: Mixed station types for testing and demonstration
+// Testing: CW + CW + SimPager2 (dual wave generator) to maintain 3 stations for stability
 #ifdef ENABLE_MORSE_STATION
-SimStation cw_station1(&wave_gen_pool, &signal_meter, 7002000.0, 11);
+SimStation cw_station1(&wave_gen_pool, &signal_meter, 7007000.0, 8);   // SLOW: 8 WPM to hold generators longer
+SimStation cw_station2(&wave_gen_pool, &signal_meter, 7008000.0, 8);   // SLOW: 8 WPM to hold generators longer
 #endif
 #ifdef ENABLE_NUMBERS_STATION
 SimNumbers numbers_station1(&wave_gen_pool, &signal_meter, 7002700.0, 18);
@@ -146,39 +151,51 @@ SimJammer jammer_station1(&wave_gen_pool);
 SimPager pager_station1(&wave_gen_pool, &signal_meter, 146800000.0);
 #endif
 
-SimTransmitter *station_pool[4] = {
+#ifdef ENABLE_PAGER2_STATION
+SimPager2 pager2_station1(&wave_gen_pool, &signal_meter, 7000000.0);  // Testing dual wave generator - moved well above other stations
+#endif
+
+SimTransmitter *station_pool[3] = {  // Original 3-station configuration (CW1 + CW2 + SimPager2)
 #ifdef ENABLE_MORSE_STATION
     &cw_station1,
+    &cw_station2,  // Restored: Second CW station
 #endif
 #ifdef ENABLE_NUMBERS_STATION
-    &numbers_station1,
+    &numbers_station1,  // SHOULD BE DISABLED per station_config.h
 #endif
 #ifdef ENABLE_RTTY_STATION
-    &rtty_station1,
+    // &rtty_station1,  // Replaced with SimPager2
 #endif
 #ifdef ENABLE_JAMMER_STATION
     &jammer_station1,
 #endif
 #ifdef ENABLE_PAGER_STATION
     &pager_station1
+#endif
+#ifdef ENABLE_PAGER2_STATION
+    &pager2_station1  // Testing dual wave generator
 #endif
 };
 
-Realization *realizations[4] = {
+Realization *realizations[3] = {  // Original 3-station configuration (CW1 + CW2 + SimPager2)
 #ifdef ENABLE_MORSE_STATION
     &cw_station1,
+    &cw_station2,  // Restored: Second CW station
 #endif
 #ifdef ENABLE_NUMBERS_STATION
-    &numbers_station1, 
+    &numbers_station1,  // SHOULD BE DISABLED per station_config.h
 #endif
 #ifdef ENABLE_RTTY_STATION
-    &rtty_station1,
+    // &rtty_station1,  // Replaced with SimPager2
 #endif
 #ifdef ENABLE_JAMMER_STATION
     &jammer_station1,
 #endif
 #ifdef ENABLE_PAGER_STATION
     &pager_station1
+#endif
+#ifdef ENABLE_PAGER2_STATION
+    &pager2_station1  // Testing dual wave generator instead of RTTY
 #endif
 };
 #endif
@@ -542,6 +559,19 @@ Realization *realizations[1] = {
 };
 #endif
 
+#ifdef CONFIG_PAGER2_TEST
+// Test config with original SimPager to isolate if issue is config or SimPager2 class
+SimPager pager_test(&wave_gen_pool, &signal_meter, 146800000.0);  // 2 meter pager frequency
+
+SimTransmitter *station_pool[1] = {
+    &pager_test
+};
+
+Realization *realizations[1] = {
+    &pager_test
+};
+#endif
+
 // ============================================================================
 // REALIZATION POOL - Initialize with configured realizations
 // ============================================================================
@@ -551,6 +581,8 @@ Realization *realizations[1] = {
 bool realization_stats[1] = {false};
 #elif defined(CONFIG_TEST_PERFORMANCE)
 bool realization_stats[1] = {false};  // Single test station
+#elif defined(CONFIG_PAGER2_TEST)
+bool realization_stats[1] = {false};  // Single dual-tone pager station
 #elif defined(CONFIG_DEV_LOW_RAM)
 bool realization_stats[3] = {false, false, false};
 #elif defined(CONFIG_FIVE_CW_RESOURCE_TEST)
@@ -559,12 +591,18 @@ bool realization_stats[5] = {false, false, false, false, false};  // 5 stations 
 bool realization_stats[21] = {false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false};  // 21 stations for comprehensive Nano Every stress test
 #elif defined(CONFIG_FILE_PILE_UP)
 bool realization_stats[3] = {false, false, false};  // 3 stations for pile-up debug
+#elif defined(CONFIG_MIXED_STATIONS)
+bool realization_stats[3] = {false, false, false};  // Original 3-station configuration (CW1 + CW2 + SimPager2)
 #else
 bool realization_stats[4] = {false, false, false, false};
 #endif
 
 #ifdef CONFIG_MINIMAL_CW
 RealizationPool realization_pool(realizations, realization_stats, 1);  // Only 1 station for minimal config
+#elif defined(CONFIG_TEST_PERFORMANCE)
+RealizationPool realization_pool(realizations, realization_stats, 1);  // Only 1 test station
+#elif defined(CONFIG_PAGER2_TEST)
+RealizationPool realization_pool(realizations, realization_stats, 1);  // Only 1 dual-tone pager station
 #elif defined(CONFIG_DEV_LOW_RAM)
 RealizationPool realization_pool(realizations, realization_stats, 3);  // 3 stations for development config
 #elif defined(CONFIG_FIVE_CW_RESOURCE_TEST)
@@ -573,6 +611,8 @@ RealizationPool realization_pool(realizations, realization_stats, 5);  // 5 stat
 RealizationPool realization_pool(realizations, realization_stats, 21);  // 21 stations competing for 4 wave generators
 #elif defined(CONFIG_FILE_PILE_UP)
 RealizationPool realization_pool(realizations, realization_stats, 3);  // 3 stations for pile-up debug
+#elif defined(CONFIG_MIXED_STATIONS)
+RealizationPool realization_pool(realizations, realization_stats, 3);  // Original 3-station configuration (CW1 + CW2 + SimPager2)
 #else
 RealizationPool realization_pool(realizations, realization_stats, 4);  // 4 stations for all other configs
 #endif
@@ -801,30 +841,19 @@ void loop()
 	// ============================================================================
 	
 #ifdef CONFIG_MIXED_STATIONS
-	// Initialize mixed station types
-#ifdef ENABLE_MORSE_STATION
-	cw_station1.begin(time + random(1000));
-	cw_station1.set_station_state(AUDIBLE);
-#endif
-	
-#ifdef ENABLE_NUMBERS_STATION
-	numbers_station1.begin(time + random(1000));
-	numbers_station1.set_station_state(AUDIBLE);
-#endif
-	
-#ifdef ENABLE_RTTY_STATION
-	rtty_station1.begin(time + random(1000));
-	rtty_station1.set_station_state(AUDIBLE);
+	// Initialize SimPager2 FIRST to test dual generator acquisition without resource pressure
+#ifdef ENABLE_PAGER2_STATION
+	pager2_station1.begin(time + random(1000));  // Start FIRST to test dual acquisition
+	pager2_station1.set_station_state(AUDIBLE);
 #endif
 
-#ifdef ENABLE_JAMMER_STATION
-	jammer_station1.begin(time + random(1000), 14004100.0);
-	jammer_station1.set_station_state(AUDIBLE);
-#endif
+	// Initialize CW stations AFTER SimPager2 has claimed its dual generators
+#ifdef ENABLE_MORSE_STATION
+	cw_station1.begin(time + random(3000));  // Start after SimPager2
+	cw_station1.set_station_state(AUDIBLE);
 	
-#ifdef ENABLE_PAGER_STATION
-	pager_station1.begin(time + random(1000));
-	pager_station1.set_station_state(AUDIBLE);
+	cw_station2.begin(time + random(4000));  // Start after SimPager2
+	cw_station2.set_station_state(AUDIBLE);
 #endif
 #endif
 
@@ -1081,6 +1110,12 @@ void loop()
 	test_station.begin(time + random(1000));
 	test_station.set_station_state(AUDIBLE);
 #endif
+#endif
+
+#ifdef CONFIG_PAGER2_TEST
+	// Initialize original SimPager test station to isolate issue
+	pager_test.begin(time + random(1000));
+	pager_test.set_station_state(AUDIBLE);
 #endif
 	set_application(APP_SIMRADIO, &display);
 
