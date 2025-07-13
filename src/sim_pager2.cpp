@@ -5,7 +5,8 @@
 #include "signal_meter.h"
 
 SimPager2::SimPager2(WaveGenPool *wave_gen_pool, SignalMeter *signal_meter, float fixed_freq) 
-    : SimTransmitter(wave_gen_pool, fixed_freq), _signal_meter(signal_meter)
+    : SimTransmitter(wave_gen_pool, fixed_freq), _signal_meter(signal_meter),
+      _current_dtmf_digit_1('?'), _current_dtmf_digit_2('?')
 {
 #if defined(ENABLE_SECOND_GENERATOR) || defined(ENABLE_DUAL_GENERATOR)
     _realizer_b = -1;
@@ -361,52 +362,41 @@ bool SimPager2::step(unsigned long time)
 
 void SimPager2::generate_new_tone_pair()
 {
-    // Generate random tone pair similar to DTMF frequencies
-    // Range: 650-1650 Hz offset, minimum 200 Hz separation
-    
-    float frequency_range = PAGER2_TONE_MAX_OFFSET - PAGER2_TONE_MIN_OFFSET;
-    
-    // Arduino random() function
-    _current_tone_a_offset = PAGER2_TONE_MIN_OFFSET + 
-        random((long)(frequency_range - PAGER2_TONE_MIN_SEPARATION));
-    
-    // Generate second tone with minimum separation
-    float remaining_range = frequency_range - PAGER2_TONE_MIN_SEPARATION;
-    float tone_b_base = random((long)remaining_range);
-    
-    // Ensure minimum separation
-    if (tone_b_base < _current_tone_a_offset - PAGER2_TONE_MIN_OFFSET) {
-        _current_tone_b_offset = PAGER2_TONE_MIN_OFFSET + tone_b_base;
-    } else {
-        _current_tone_b_offset = _current_tone_a_offset + PAGER2_TONE_MIN_SEPARATION + 
-            (tone_b_base - (_current_tone_a_offset - PAGER2_TONE_MIN_OFFSET));
-    }
+    // Generate DTMF digit pairs for both generators
+    generate_dtmf_digit();
+}
 
-    // Ensure tone B doesn't exceed maximum
-    if (_current_tone_b_offset > PAGER2_TONE_MAX_OFFSET) {
-        _current_tone_b_offset = PAGER2_TONE_MAX_OFFSET;
-    }
+void SimPager2::generate_dtmf_digit()
+{
+    // DTMF row and column frequency arrays
+    static const float dtmf_rows[] = {DTMF_ROW_1, DTMF_ROW_2, DTMF_ROW_3, DTMF_ROW_4};
+    static const float dtmf_cols[] = {DTMF_COL_1, DTMF_COL_2, DTMF_COL_3, DTMF_COL_4};
+    
+    // DTMF digit lookup table
+    static const char dtmf_digits[4][4] = {
+        {'1', '2', '3', 'A'},
+        {'4', '5', '6', 'B'}, 
+        {'7', '8', '9', 'C'},
+        {'*', '0', '#', 'D'}
+    };
+    
+    // Generate first generator's DTMF digit (row frequency + column frequency)
+    int row1 = random(4);  // Select random row (0-3)
+    int col1 = random(4);  // Select random column (0-3)
+    
+    _current_tone_a_offset = dtmf_rows[row1];    // Row frequency for tone A
+    _current_tone_b_offset = dtmf_cols[col1];    // Column frequency for tone B
+    _current_dtmf_digit_1 = dtmf_digits[row1][col1];
 
 #if defined(ENABLE_SECOND_GENERATOR) || defined(ENABLE_DUAL_GENERATOR)
-    // Second generator gets its own completely separate tone pair (IMPORTANT: different frequencies)
-    _current_tone_a_offset_b = PAGER2_TONE_MIN_OFFSET + 
-        random((long)(frequency_range - PAGER2_TONE_MIN_SEPARATION));
+    // Generate second generator's DTMF digit (column frequency + row frequency - reversed!)
+    int row2 = random(4);  // Select random row (0-3)  
+    int col2 = random(4);  // Select random column (0-3)
     
-    // Generate second tone for generator B with minimum separation
-    float tone_b_base_b = random((long)remaining_range);
-    
-    // Ensure minimum separation for generator B
-    if (tone_b_base_b < _current_tone_a_offset_b - PAGER2_TONE_MIN_OFFSET) {
-        _current_tone_b_offset_b = PAGER2_TONE_MIN_OFFSET + tone_b_base_b;
-    } else {
-        _current_tone_b_offset_b = _current_tone_a_offset_b + PAGER2_TONE_MIN_SEPARATION + 
-            (tone_b_base_b - (_current_tone_a_offset_b - PAGER2_TONE_MIN_OFFSET));
-    }
-
-    // Ensure tone B for generator B doesn't exceed maximum
-    if (_current_tone_b_offset_b > PAGER2_TONE_MAX_OFFSET) {
-        _current_tone_b_offset_b = PAGER2_TONE_MAX_OFFSET;
-    }
+    // Reverse the assignment: second generator uses column for A, row for B
+    _current_tone_a_offset_b = dtmf_cols[col2]; // Column frequency for tone A
+    _current_tone_b_offset_b = dtmf_rows[row2]; // Row frequency for tone B  
+    _current_dtmf_digit_2 = dtmf_digits[row2][col2];
 #endif
 }
 

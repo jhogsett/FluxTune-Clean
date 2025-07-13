@@ -11,10 +11,18 @@
 
 class SignalMeter; // Forward declaration
 
-// Pager tone frequency range (Hz offset from VFO) - DTMF-like range for pleasant listening
-#define PAGER2_TONE_MIN_OFFSET 650.0    // Minimum tone frequency offset (DTMF-like range)
-#define PAGER2_TONE_MAX_OFFSET 1650.0   // Maximum tone frequency offset (DTMF-like range)
-#define PAGER2_TONE_MIN_SEPARATION 100.0 // Minimum separation between tones (suitable for DTMF-like range)
+// DTMF frequency definitions (Hz offset from VFO)
+// Row frequencies (low frequencies)
+#define DTMF_ROW_1    697.0     // Rows 1, 2, 3
+#define DTMF_ROW_2    770.0     // Rows 4, 5, 6  
+#define DTMF_ROW_3    852.0     // Rows 7, 8, 9
+#define DTMF_ROW_4    941.0     // Rows *, 0, #
+
+// Column frequencies (high frequencies)
+#define DTMF_COL_1    1209.0    // Columns 1, 4, 7, *
+#define DTMF_COL_2    1336.0    // Columns 2, 5, 8, 0
+#define DTMF_COL_3    1477.0    // Columns 3, 6, 9, #
+#define DTMF_COL_4    1633.0    // Columns A, B, C, D (extended DTMF)
 
 class SimPager2 : public SimTransmitter
 {
@@ -34,6 +42,9 @@ public:
     // Method to generate new tone pairs for testing
     void generate_new_tone_pair();
     
+    // Method to generate DTMF digit tone pairs
+    void generate_dtmf_digit();
+    
     // Debug method to test dual generator acquisition
     void debug_test_dual_generator_acquisition();
 
@@ -42,6 +53,10 @@ private:
     float _current_tone_a_offset;
     float _current_tone_b_offset;
     SignalMeter *_signal_meter;     // Pointer to signal meter for charge pulses
+    
+    // DTMF digit tracking
+    char _current_dtmf_digit_1;     // First generator's DTMF digit
+    char _current_dtmf_digit_2;     // Second generator's DTMF digit
     
 #if defined(ENABLE_SECOND_GENERATOR) || defined(ENABLE_DUAL_GENERATOR)
     // Second generator support - separate wave generator for testing/dual-tone
