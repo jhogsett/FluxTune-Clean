@@ -4,22 +4,8 @@
 #include "sim_transmitter.h"
 #include <stdint.h>
 
-// Dynamic MAX_STATIONS based on configuration
-#ifdef CONFIG_TEN_CW
-#define MAX_STATIONS 21
-#elif defined(CONFIG_MIXED_STATIONS)
-#define MAX_STATIONS 3  // Updated to match actual station count
-#elif defined(CONFIG_FIVE_CW) || defined(CONFIG_FIVE_CW_RESOURCE_TEST)
-#define MAX_STATIONS 5
-#elif defined(CONFIG_FOUR_CW) || defined(CONFIG_FOUR_NUMBERS) || defined(CONFIG_FOUR_PAGER) || defined(CONFIG_FOUR_RTTY) || defined(CONFIG_FOUR_JAMMER) || defined(CONFIG_CW_CLUSTER)
-#define MAX_STATIONS 4
-#elif defined(CONFIG_DEV_LOW_RAM) || defined(CONFIG_FILE_PILE_UP)
-#define MAX_STATIONS 3
-#elif defined(CONFIG_MINIMAL_CW) || defined(CONFIG_TEST_PERFORMANCE)
-#define MAX_STATIONS 1
-#else
-#define MAX_STATIONS 4  // Default fallback
-#endif
+// Maximum stations that StationManager can handle internally  
+#define MAX_STATIONS 25  // Handle largest config (CONFIG_TEN_CW = 21 stations)
 
 #define MAX_AD9833 4
 
@@ -35,7 +21,8 @@
 
 class StationManager {
 public:
-    StationManager(SimTransmitter* station_ptrs[MAX_STATIONS]);
+    // Simple, standard approach: array pointer + count (like every other class)
+    StationManager(SimTransmitter* station_ptrs[], int actual_station_count);
     void updateStations(uint32_t vfo_freq);
     void allocateAD9833();
     void recycleDormantStations(uint32_t vfo_freq);
@@ -56,6 +43,7 @@ public:
 private:
     SimTransmitter* stations[MAX_STATIONS];
     int ad9833_assignment[MAX_AD9833]; // Maps AD9833 channels to station indices
+    int actual_station_count; // Number of actual stations in the array
     
     // Dynamic pipelining state
     bool pipeline_enabled;

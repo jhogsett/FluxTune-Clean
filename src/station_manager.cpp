@@ -1,11 +1,16 @@
 #include "station_manager.h"
 #include "sim_numbers.h" // Example concrete station type
 
-StationManager::StationManager(SimTransmitter* station_ptrs[MAX_STATIONS]) {
-    for (int i = 0; i < MAX_STATIONS; ++i) {
+StationManager::StationManager(SimTransmitter* station_ptrs[], int actual_station_count) 
+    : actual_station_count(actual_station_count) {
+    for (int i = 0; i < actual_station_count; ++i) {
         stations[i] = station_ptrs[i];
         stations[i]->setActive(false);
         stations[i]->set_station_state(DORMANT);
+    }
+    // Initialize remaining slots to nullptr (not accessed)
+    for (int i = actual_station_count; i < MAX_STATIONS; ++i) {
+        stations[i] = nullptr;
     }
     for (int i = 0; i < MAX_AD9833; ++i) {
         ad9833_assignment[i] = -1;
@@ -38,7 +43,7 @@ void StationManager::allocateAD9833() {
     int assigned_count = 0;
     
     // First pass: assign to stations already in AUDIBLE state to avoid disruption
-    for (int i = 0; i < MAX_STATIONS && assigned_count < MAX_AD9833; ++i) {
+    for (int i = 0; i < actual_station_count && assigned_count < MAX_AD9833; ++i) {
         if (stations[i]->get_station_state() == AUDIBLE) {
             ad9833_assignment[assigned_count] = i;
             assigned_count++;
@@ -46,7 +51,7 @@ void StationManager::allocateAD9833() {
     }
     
     // Second pass: assign remaining channels to ACTIVE stations
-    for (int i = 0; i < MAX_STATIONS && assigned_count < MAX_AD9833; ++i) {
+    for (int i = 0; i < actual_station_count && assigned_count < MAX_AD9833; ++i) {
         if (stations[i]->get_station_state() == ACTIVE) {
             ad9833_assignment[assigned_count] = i;
             stations[i]->set_station_state(AUDIBLE);
@@ -55,7 +60,7 @@ void StationManager::allocateAD9833() {
     }
     
     // Update station states based on assignments
-    for (int i = 0; i < MAX_STATIONS; ++i) {
+    for (int i = 0; i < actual_station_count; ++i) {
         bool has_assignment = false;
         for (int j = 0; j < MAX_AD9833; ++j) {
             if (ad9833_assignment[j] == i) {
@@ -78,7 +83,7 @@ void StationManager::recycleDormantStations(uint32_t vfo_freq) {
 }
 
 void StationManager::activateStation(int idx, uint32_t freq) {
-    if (idx >= 0 && idx < MAX_STATIONS) {
+    if (idx >= 0 && idx < actual_station_count) {
         stations[idx]->reinitialize(millis(), freq);
         stations[idx]->setActive(true);
         stations[idx]->set_station_state(ACTIVE);
@@ -86,7 +91,7 @@ void StationManager::activateStation(int idx, uint32_t freq) {
 }
 
 void StationManager::deactivateStation(int idx) {
-    if (idx >= 0 && idx < MAX_STATIONS) {
+    if (idx >= 0 && idx < actual_station_count) {
         stations[idx]->setActive(false);
         stations[idx]->set_station_state(DORMANT);
         
@@ -101,7 +106,7 @@ void StationManager::deactivateStation(int idx) {
 }
 
 int StationManager::findDormantStation() {
-    for (int i = 0; i < MAX_STATIONS; ++i) {
+    for (int i = 0; i < actual_station_count; ++i) {
         if (stations[i]->get_station_state() == DORMANT) return i;
     }
     return -1;
@@ -128,8 +133,8 @@ void StationManager::setupPipeline(uint32_t vfo_freq) {
     last_tuning_time = millis();
     tuning_direction = 0; // Start in stopped state
     
-    // Activate all stations with their natural frequencies
-    for (int i = 0; i < MAX_STATIONS; ++i) {
+    // Activate all valid stations with their natural frequencies
+    for (int i = 0; i < actual_station_count; ++i) {
         // Start the station with its natural frequency (don't call reinitialize)
         stations[i]->begin(millis());
         stations[i]->setActive(true);
@@ -226,7 +231,7 @@ void StationManager::reallocateStations(uint32_t vfo_freq) {
     int candidate_count = 0;
     
     // Find stations that are outside the lookahead range
-    for (int i = 0; i < MAX_STATIONS; ++i) {
+    for (int i = 0; i < actual_station_count; ++i) {
         uint32_t station_freq = (uint32_t)stations[i]->get_fixed_frequency();
         int32_t distance_from_vfo = (int32_t)(station_freq - vfo_freq);
         uint32_t abs_distance = abs(distance_from_vfo);
@@ -295,7 +300,7 @@ void StationManager::reallocateStations(uint32_t vfo_freq) {
     
     // Reallocate stations starting with the furthest ones
     int stations_moved = 0;
-    for (int c = 0; c < candidate_count && stations_moved < MAX_STATIONS - 1; ++c) { // Allow moving almost all stations
+    for (int c = 0; c < candidate_count && stations_moved < actual_station_count - 1; ++c) { // Allow moving almost all stations
         int i = candidates[c].index;
         uint32_t new_freq;
         
@@ -331,7 +336,7 @@ void StationManager::reallocateStations(uint32_t vfo_freq) {
 
 void StationManager::updateStationStates(uint32_t vfo_freq) {
     // Update station states based on proximity to VFO
-    for (int i = 0; i < MAX_STATIONS; ++i) {
+    for (int i = 0; i < actual_station_count; ++i) {
         if (!stations[i]->isActive()) continue; // Skip inactive stations
         
         uint32_t station_freq = (uint32_t)stations[i]->get_fixed_frequency();
@@ -385,7 +390,7 @@ int StationManager::calculateTuningDirection(uint32_t current_freq, uint32_t las
 }
 
 bool StationManager::canInterruptStation(int station_idx, uint32_t vfo_freq) const {
-    if (station_idx < 0 || station_idx >= MAX_STATIONS) return false;
+    if (station_idx < 0 || station_idx >= actual_station_count) return false;
     
     uint32_t station_freq = (uint32_t)stations[station_idx]->get_fixed_frequency();
     uint32_t distance = abs((int32_t)(station_freq - vfo_freq));
@@ -411,13 +416,13 @@ bool StationManager::canInterruptStation(int station_idx, uint32_t vfo_freq) con
 }
 
 SimTransmitter* StationManager::getStation(int idx) {
-    if (idx >= 0 && idx < MAX_STATIONS) return stations[idx];
+    if (idx >= 0 && idx < actual_station_count) return stations[idx];
     return nullptr;
 }
 
 int StationManager::getActiveStationCount() const {
     int count = 0;
-    for (int i = 0; i < MAX_STATIONS; ++i) {
+    for (int i = 0; i < actual_station_count; ++i) {
         if (stations[i]->isActive()) ++count;
     }
     return count;
