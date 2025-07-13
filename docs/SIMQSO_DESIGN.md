@@ -43,8 +43,11 @@ public:
 
 ```cpp
 enum QSOState {
-    QSO_CALLING,        // Station A calling CQ
-    QSO_ANSWERING,      // Station B responds  
+    QSO_CQ_ROUND_1,     // Station A calling CQ (first attempt)
+    QSO_CQ_ROUND_2,     // Station A calling CQ (second attempt)  
+    QSO_CQ_ROUND_3,     // Station A calling CQ (third attempt - optional)
+    QSO_LISTENING_A,    // Station A listening after CQ
+    QSO_ANSWERING,      // Station B finally responds
     QSO_RST_EXCHANGE,   // Exchange signal reports
     QSO_QTH_EXCHANGE,   // Exchange locations
     QSO_CHAT,           // Brief conversation (optional)
@@ -83,18 +86,57 @@ struct QSOPhase {
     bool station_a_transmits;
     const char* message_template;
     uint16_t duration_ms;
+    uint16_t listen_time_ms;  // Silent time after transmission
 };
 
 const QSOPhase standard_qso[] = {
-    {QSO_CALLING,     true,  "CQ CQ CQ DE %s %s K", 8000},
-    {QSO_ANSWERING,   false, "%s DE %s %s KN", 4000},
-    {QSO_RST_EXCHANGE, true,  "%s DE %s UR 5NN 5NN QTH %s %s K", 6000},
-    {QSO_RST_EXCHANGE, false, "%s DE %s R R TNX 599 599 QTH %s %s K", 6000},
-    {QSO_73s,         true,  "%s DE %s 73 73 %s SK", 4000},
-    {QSO_73s,         false, "%s DE %s 73 GL %s SK", 3000},
-    {QSO_COMPLETE,    false, "", 15000}, // 15 second pause
-    {QSO_IDLE,        false, "", 0}      // End marker
+    // Station A calls CQ multiple times before getting response
+    {QSO_CQ_ROUND_1,  true,  "CQ CQ CQ DE %s %s K", 6000, 3000},    // CQ + 3 sec listen
+    {QSO_CQ_ROUND_2,  true,  "CQ CQ DE %s %s K", 5000, 4000},       // Shorter CQ + 4 sec listen  
+    {QSO_CQ_ROUND_3,  true,  "CQ CQ DE %s %s PSE K", 5000, 5000},   // Final CQ + 5 sec listen
+    
+    // Station B finally responds (simulates discovering the CQ)
+    {QSO_ANSWERING,   false, "%s DE %s %s KN", 4000, 1000},
+    
+    // Normal exchange continues
+    {QSO_RST_EXCHANGE, true,  "%s DE %s UR 5NN 5NN QTH %s %s K", 6000, 1000},
+    {QSO_RST_EXCHANGE, false, "%s DE %s R R TNX 599 599 QTH %s %s K", 6000, 1000},
+    {QSO_73s,         true,  "%s DE %s 73 73 %s SK", 4000, 1000},
+    {QSO_73s,         false, "%s DE %s 73 GL %s SK", 3000, 0},
+    {QSO_COMPLETE,    false, "", 0, 15000}, // 15 second pause before next QSO
+    {QSO_IDLE,        false, "", 0, 0}      // End marker
 };
+```
+
+### **Realistic CQ Discovery Behavior:**
+
+**Station A (CQ-ing station):**
+- Sends 2-3 CQ rounds with slight variations
+- Each CQ gets progressively shorter 
+- Listens after each CQ for 3-5 seconds
+- Might add "PSE" (please) on final CQ attempt
+
+**Station B (Answering station):**
+- Doesn't respond to first CQ (still tuning/deciding)
+- May respond to second or third CQ
+- Response timing randomized (30-70% chance per CQ round)
+- Simulates operator discovering and deciding to answer
+
+**Implementation Logic:**
+```cpp
+bool SimQSO::shouldStationBAnswer(QSOState cq_round) {
+    static uint8_t response_threshold = random(40, 80); // 40-80% threshold
+    uint8_t current_chance;
+    
+    switch(cq_round) {
+        case QSO_CQ_ROUND_1: current_chance = 20; break;  // 20% chance
+        case QSO_CQ_ROUND_2: current_chance = 50; break;  // 50% chance  
+        case QSO_CQ_ROUND_3: current_chance = 85; break;  // 85% chance
+        default: current_chance = 0;
+    }
+    
+    return (current_chance >= response_threshold);
+}
 ```
 
 ## **Key Advantages of This Approach**
@@ -138,9 +180,23 @@ Realization *realizations[4] = {
 - **Effect**: Sounds like two different stations when listening
 
 ### **Timing Variation:**
-- **Between operators**: 500-2000ms pause when switching
+- **CQ Discovery**: Station A calls 2-3 times before Station B responds
+- **Listening periods**: 3-5 seconds of silence after each CQ
+- **Response probability**: Increases with each CQ round (20% → 50% → 85%)
+- **Between operators**: 500-2000ms pause when switching to exchange
 - **Within message**: Each operator uses their own WPM/fist
 - **Between QSOs**: 10-30 second random pause
+
+### **Realistic Operating Patterns:**
+```cpp
+// Example timing for complete QSO cycle:
+// 00:00 - Station A: "CQ CQ CQ DE W1ABC W1ABC K" (6 sec)
+// 00:06 - Listen period (3 sec silence) 
+// 00:09 - Station A: "CQ CQ DE W1ABC W1ABC K" (5 sec)
+// 00:14 - Listen period (4 sec silence)
+// 00:18 - Station B: "W1ABC DE VK2DEF VK2DEF KN" (4 sec)
+// 00:22 - Normal exchange continues...
+```
 
 ### **Content Variation:**
 ```cpp
