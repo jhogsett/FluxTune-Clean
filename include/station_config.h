@@ -8,7 +8,7 @@
 // Choose ONE configuration mode by uncommenting it
 
 // ===== PRODUCTION CONFIGURATION =====
-// #define CONFIG_MIXED_STATIONS    // Default: All different station types
+// #define CONFIG_MIXED_STATIONS    // Default: All different station types - RESTORED WORKING CONFIG
 
 // ===== DEVELOPMENT CONFIGURATION =====  
 // #define CONFIG_DEV_LOW_RAM       // Development: Minimal RAM usage for development work
@@ -20,14 +20,18 @@
 
 // ===== TEST CONFIGURATIONS =====
 // #define CONFIG_FOUR_CW          // Four CW/Morse stations for CW testing
-// #define CONFIG_FIVE_CW          // Four CW/Morse stations for simulating Field Day traffic
+// // #define CONFIG_FIVE_CW          // Five CW/Morse stations for simulating Field Day traffic
+#define CONFIG_TEN_CW           // 21-station stress test for Nano Every (10 CW + 5 Numbers + 4 RTTY + 2 Pager)
 // #define CONFIG_TEST_PERFORMANCE  // Single test station for measuring main loop performance
 // #define CONFIG_FILE_PILE_UP     // Five CW/Morse stations simulating Scarborough Reef pile-up (BS77H variations)
 // #define CONFIG_FOUR_NUMBERS     // Four Numbers stations for spooky testing
 // #define CONFIG_FOUR_PAGER       // Four Pager stations for digital testing
 // #define CONFIG_FOUR_RTTY        // Four RTTY stations for RTTY testing
 // #define CONFIG_FOUR_JAMMER      // Four Jammer stations for interference testing
-// #define CONFIG_MINIMAL_CW       // Single CW station (minimal memory)
+// #define CONFIG_PAGER2_TEST      // Single dual-tone pager station for testing dual wave generators
+// #define CONFIG_MINIMAL_CW       // Single CW station (minimal memory) - TESTING COUNT-BASED FIX!
+// #define CONFIG_FIVE_CW          // Five CW/Morse stations for simulating Field Day traffic - TESTING BUG FIX!
+// #define CONFIG_MIXED_STATIONS   // Default: CW + SimPager2 dual-tone breakthrough!
 
 // ===== LISTENING PLEASURE CONFIGURATION =====
 // #define CONFIG_CW_CLUSTER       // Four CW stations clustered in 40m for listening pleasure
@@ -55,14 +59,31 @@
 // #define USE_EEPROM_TABLES  // Uncomment to use EEPROM-based table storage
 
 // ===== CONFIGURATION IMPLEMENTATION =====
+//
+// *** CRITICAL: Array Synchronization Requirements ***
+//
+// When creating new configurations or modifying existing ones, you MUST update
+// the corresponding arrays in src/main.cpp to match the actual station count:
+//
+// 1. station_pool[SIZE] - Array of station pointers
+// 2. realizations[SIZE] - Array of realization pointers (must match station_pool size)
+// 3. realization_stats[SIZE] - Status tracking array (around line 590-602)
+// 4. RealizationPool constructor SIZE parameter (around line 610-620)
+//
+// *** RESTART BUG WARNING ***
+// Mismatched array sizes cause continuous Arduino restarts!
+// Example: Single-station configs need [1], not [3]
+//
+// ===============================================================================
 #ifdef CONFIG_MIXED_STATIONS
-    // Production: Mixed station types (default)
+    // Testing: CW + SimPager (original) + SimPager2 (dual) for direct comparison
     #define ENABLE_MORSE_STATION    // Basic CW/Morse station (SimStation)
-    #define ENABLE_NUMBERS_STATION  // Numbers Station (SimNumbers) 
-    #define ENABLE_PAGER_STATION    // Pager Station (SimPager)
-    #define ENABLE_RTTY_STATION     // RTTY Station (SimRTTY)
-    // NOTE: To enable jammer, comment out RTTY and uncomment below:
-    // #define ENABLE_JAMMER_STATION   // Jammer Station (SimJammer) - replaces RTTY
+    // #define ENABLE_NUMBERS_STATION  // Numbers Station (SimNumbers) - REMOVED
+    // #define ENABLE_PAGER_STATION    // Pager Station (SimPager) - TEMPORARILY DISABLED for SimPager2 testing
+    // #define ENABLE_RTTY_STATION     // RTTY Station (SimRTTY) - REPLACED with SimPager2
+    #define ENABLE_PAGER2_STATION   // SimPager2 (dual wave generator) - TESTING
+    // NOTE: To enable jammer, comment out PAGER2 and uncomment below:
+    // #define ENABLE_JAMMER_STATION   // Jammer Station (SimJammer) - replaces PAGER2
 #endif
 
 #ifdef CONFIG_DEV_LOW_RAM
@@ -83,9 +104,19 @@
 #endif
 
 #ifdef CONFIG_FIVE_CW
-    // Test: Four CW stations with different messages/speeds
+    // Test: Five CW stations with different messages/speeds
     #define ENABLE_FOUR_CW_STATIONS
     #define ENABLE_MORSE_STATION
+    // Other stations disabled for focused CW testing
+#endif
+
+#ifdef CONFIG_TEN_CW
+    // Test: Ten CW stations with different messages/speeds for Nano Every memory testing
+    #define ENABLE_TEN_CW_STATIONS
+    #define ENABLE_MORSE_STATION
+    #define ENABLE_PAGER_STATION
+    #define ENABLE_RTTY_STATION
+    #define ENABLE_NUMBERS_STATION
     // Other stations disabled for focused CW testing
 #endif
 
@@ -108,6 +139,12 @@
     #define ENABLE_FOUR_PAGER_STATIONS
     #define ENABLE_PAGER_STATION
     // Other stations disabled for focused Pager testing
+#endif
+
+#ifdef CONFIG_PAGER2_TEST
+    // Test: Single original pager station to isolate CONFIG_PAGER2_TEST vs SimPager2 issue
+    #define ENABLE_PAGER_STATION
+    // Other stations disabled for focused pager testing
 #endif
 
 #ifdef CONFIG_FOUR_RTTY
