@@ -22,10 +22,15 @@
 
 class StationManager {
 public:
-    // Simple, standard approach: array pointer + count (like every other class)
+    // Standard constructor: Direct array of SimTransmitter pointers
     StationManager(SimTransmitter* station_ptrs[], int actual_station_count);
     
-    // OPTIMIZATION: Share realizations array with RealizationPool to eliminate duplicate arrays
+    // MEMORY OPTIMIZATION: Share RealizationPool array to eliminate duplicate station arrays
+    // REQUIREMENT: All array entries MUST be SimTransmitter-derived objects (checked at runtime)
+    // This constructor enables zero-copy sharing of the realizations array between:
+    //   - RealizationPool (uses as Realization* array)
+    //   - StationManager (casts to SimTransmitter* array)
+    // Memory savings: Eliminates one pointer array per configuration (8-168 bytes depending on station count)
     StationManager(Realization* shared_stations[], int actual_station_count);
     
     void updateStations(uint32_t vfo_freq);

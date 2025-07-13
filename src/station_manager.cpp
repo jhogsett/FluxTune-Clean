@@ -24,10 +24,12 @@ StationManager::StationManager(SimTransmitter* station_ptrs[], int actual_statio
     last_tuning_time = 0;
 }
 
-// OPTIMIZATION: Constructor that shares realizations array to eliminate duplicate arrays
+// MEMORY OPTIMIZATION: Constructor that shares realizations array to eliminate duplicate arrays
+// REQUIREMENT: All array entries MUST be SimTransmitter-derived objects
 StationManager::StationManager(Realization* shared_stations[], int actual_station_count) 
     : actual_station_count(actual_station_count) {
-    // Since Realization* can be cast to SimTransmitter* (inheritance), we can reuse the array
+    // Cast Realization* to SimTransmitter* (safe due to inheritance in station classes)
+    // All station classes inherit from both Realization and SimTransmitter
     for (int i = 0; i < actual_station_count; ++i) {
         stations[i] = static_cast<SimTransmitter*>(shared_stations[i]);
         stations[i]->setActive(false);

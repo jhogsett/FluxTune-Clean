@@ -132,19 +132,30 @@ SignalMeter signal_meter;
 // STATION CONFIGURATION - Conditional compilation based on station_config.h
 // ============================================================================
 //
+// *** MEMORY OPTIMIZATION: SHARED REALIZATION ARRAYS ***
+//
+// DESIGN PATTERN: Zero-copy array sharing between RealizationPool and StationManager
+// - Single realizations[] array serves both managers (eliminates duplicate station_pool[] arrays)
+// - StationManager constructor casts Realization* to SimTransmitter* (safe due to dual inheritance)
+// - Memory savings: 8-168 bytes per configuration depending on station count
+//
+// INHERITANCE REQUIREMENT: All station classes MUST inherit from BOTH:
+//   - SimTransmitter (for StationManager compatibility)
+//   - Realization (for RealizationPool compatibility)
+//
 // *** CRITICAL ARRAY SYNCHRONIZATION REQUIREMENTS ***
 //
 // When adding/removing stations or creating new configurations, you MUST update:
 //
-// 1. station_pool[SIZE] array declaration (match actual station count)
-// 2. realizations[SIZE] array declaration (must match station_pool size)  
-// 3. realization_stats[SIZE] array in conditional #ifdef block (lines ~590-602)
-// 4. RealizationPool constructor parameter (lines ~610-620)
+// 1. realizations[SIZE] array declaration (match actual station count)
+// 2. realization_stats[SIZE] array in conditional #ifdef block (lines ~590-602)
+// 3. RealizationPool constructor parameter (lines ~610-620)
+// 4. StationManager constructor parameter (lines ~570-580)
 //
-// Example: CONFIG_MIXED_STATIONS currently has 3 stations:
-//   - station_pool[3] and realizations[3] (defined in config sections below)
-//   - realization_stats[3] (defined around line 597)
-//   - RealizationPool(..., 3) (defined around line 615)
+// Example: CONFIG_MIXED_STATIONS currently has 2 stations:
+//   - realizations[2] (defined in config sections below)
+//   - realization_stats[2] (defined around line 597)
+//   - RealizationPool(..., 2) and StationManager(realizations, 2)
 //
 // *** RESTART BUG WARNING ***
 // Mismatched array sizes cause continuous Arduino restarts!
