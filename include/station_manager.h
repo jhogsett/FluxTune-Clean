@@ -22,11 +22,8 @@
 
 class StationManager {
 public:
-    // Standard constructor: Direct array of SimTransmitter pointers
-    StationManager(SimTransmitter* station_ptrs[], int actual_station_count);
-    
     // MEMORY OPTIMIZATION: Share RealizationPool array to eliminate duplicate station arrays
-    // REQUIREMENT: All array entries MUST be SimTransmitter-derived objects (checked at runtime)
+    // REQUIREMENT: All array entries MUST be SimTransmitter-derived objects
     // This constructor enables zero-copy sharing of the realizations array between:
     //   - RealizationPool (uses as Realization* array)
     //   - StationManager (casts to SimTransmitter* array)
