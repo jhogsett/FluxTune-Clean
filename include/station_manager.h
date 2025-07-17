@@ -2,11 +2,25 @@
 #define STATION_MANAGER_H
 
 #include "sim_transmitter.h"
-#include "realization.h"
+#include "station_config.h"
 #include <stdint.h>
 
-// Maximum stations that StationManager can handle internally  
-#define MAX_STATIONS 25  // Handle largest config (CONFIG_TEN_CW = 21 stations)
+// Dynamic MAX_STATIONS based on configuration
+#ifdef CONFIG_TEN_CW
+#define MAX_STATIONS 21
+#elif defined(CONFIG_MIXED_STATIONS)
+#define MAX_STATIONS 3  // Updated to match actual station count
+#elif defined(CONFIG_FIVE_CW) || defined(CONFIG_FIVE_CW_RESOURCE_TEST)
+#define MAX_STATIONS 5
+#elif defined(CONFIG_FOUR_CW) || defined(CONFIG_FOUR_NUMBERS) || defined(CONFIG_FOUR_PAGER) || defined(CONFIG_FOUR_RTTY) || defined(CONFIG_FOUR_JAMMER) || defined(CONFIG_CW_CLUSTER)
+#define MAX_STATIONS 4
+#elif defined(CONFIG_DEV_LOW_RAM) || defined(CONFIG_FILE_PILE_UP)
+#define MAX_STATIONS 3
+#elif defined(CONFIG_MINIMAL_CW) || defined(CONFIG_TEST_PERFORMANCE)
+#define MAX_STATIONS 1
+#else
+#define MAX_STATIONS 4  // Default fallback
+#endif
 
 #define MAX_AD9833 4
 
@@ -22,14 +36,7 @@
 
 class StationManager {
 public:
-    // MEMORY OPTIMIZATION: Share RealizationPool array to eliminate duplicate station arrays
-    // REQUIREMENT: All array entries MUST be SimTransmitter-derived objects
-    // This constructor enables zero-copy sharing of the realizations array between:
-    //   - RealizationPool (uses as Realization* array)
-    //   - StationManager (casts to SimTransmitter* array)
-    // Memory savings: Eliminates one pointer array per configuration (8-168 bytes depending on station count)
-    StationManager(Realization* shared_stations[], int actual_station_count);
-    
+    StationManager(SimTransmitter** station_ptrs, int actual_station_count);
     void updateStations(uint32_t vfo_freq);
     void allocateAD9833();
     void recycleDormantStations(uint32_t vfo_freq);
@@ -48,9 +55,9 @@ public:
     uint32_t getPipelineCenterFreq() const { return pipeline_center_freq; }
     
 private:
-    SimTransmitter* stations[MAX_STATIONS];
+    SimTransmitter** stations;
+    int actual_station_count;
     int ad9833_assignment[MAX_AD9833]; // Maps AD9833 channels to station indices
-    int actual_station_count; // Number of actual stations in the array
     
     // Dynamic pipelining state
     bool pipeline_enabled;
