@@ -66,17 +66,19 @@
 #include "eeprom_tables.h"
 #endif
 
+#include "signal_meter.h"
+
 // ============================================================================
 // BRANDING MODE FOR PRODUCT PHOTOGRAPHY
 // Comment out this #define to disable branding mode and save Flash memory
 // ============================================================================
-// #define ENABLE_BRANDING_MODE  // OPTIMIZATION: Disabled by default to save Flash
+#define ENABLE_BRANDING_MODE  // OPTIMIZATION: Disabled by default to save Flash
 
 // Create an ledStrip object and specify the pin it will use.
 // Now using Adafruit NeoPixel for both platforms
 // PololuLedStrip<12> ledStrip;
 
-#define LED_COUNT 7
+// #define LED_COUNT 7
 
 
 
@@ -697,34 +699,53 @@ void setup(){
 // Sets signal meter to full strength and lights panel LEDs at max brightness
 // ============================================================================
 void activate_branding_mode() {
-    // Keep display showing "FluxTune" from previous code - perfect for branding photos!
+	Adafruit_NeoPixel* led_strip = nullptr;
+
+	// Keep display showing "FluxTune" from previous code - perfect for branding photos!
       // Directly set signal meter LEDs to 4x brightness (bypass dynamic system)
-	rgb_color full_colors[LED_COUNT] = 
+	// rgb_color full_colors[LED_COUNT] = 
 #ifdef DEVICE_VARIANT_RED_DISPLAY
-    {
-      { 60, 0, 0 },   // 4x brightness for all LEDs (was 15)
-      { 60, 30, 0 }, 
-      { 60, 60, 0 }, 
-      { 0, 60, 0 }, 
-      { 0, 60, 60 }, 
-      { 0, 0, 60 }, 
-      { 30, 0, 60 }     // Red at the end
-    };
+// Color values for NeoPixel (red, green, blue ordering)
+static const uint32_t BRAND_COLORS[SignalMeter::LED_COUNT] = {
+    0x0F0000,   // Red
+    0x0F0700,   // Orange
+    0x0F0F00,   // Yellow
+    0x000F00,   // Green
+    0x000F0F,   // Cyan
+    0x00000F,   // Blue
+    0x07000F    // Purple
+};
 #else
-    {
-      { 0, 60, 0 },   // 4x brightness for all LEDs (was 15)
-      { 0, 60, 0 }, 
-      { 0, 60, 0 }, 
-      { 0, 60, 0 }, 
-      { 60, 60, 0 }, 
-      { 60, 60, 0 }, 
-      { 60, 0, 6 }     // Red at the end
-    };
+// Color values for NeoPixel (red, green, blue ordering)
+static const uint32_t BRAND_COLORS[SignalMeter::LED_COUNT] = {
+    0x000F00,   // Green
+    0x000F00,   // Green  
+    0x000F00,   // Green
+    0x000F00,   // Green
+    0x0F0F00,   // Yellow
+    0x0F0F00,   // Yellow
+    0x0F0000,    // Red
+};
 #endif
 
-    // Enter infinite loop for photography - device stays in perfect display state
-    while(true) {
-        // Keep signal meter LEDs at full brightness (handled by SignalMeter class now)
+	led_strip = new Adafruit_NeoPixel(SignalMeter::LED_COUNT, SIGNAL_METER_PIN, NEO_GRB + NEO_KHZ800);
+	led_strip->begin();
+	led_strip->clear();
+	led_strip->show();
+	
+	// Enter infinite loop for photography - device stays in perfect display state
+	while(true) {
+		for(int i = 0; i < SignalMeter::LED_COUNT; i++){
+			uint32_t color = BRAND_COLORS[i];
+			// uint8_t r = (color >> 16) & 0xFF;
+			// uint8_t g = (color >> 8) & 0xFF;
+			// uint8_t b = color & 0xFF;
+			// led_strip->setPixelColor(i, led_strip->Color(r, g, b));
+			led_strip->setPixelColor(i, color);
+		}
+		led_strip->show();
+
+		// Keep signal meter LEDs at full brightness (handled by SignalMeter class now)
         // Keep both panel LEDs at 4x maximum brightness
         analogWrite(WHITE_PANEL_LED, (PANEL_LOCK_LED_FULL_BRIGHTNESS * 4) / PANEL_LED_BRIGHTNESS_DIVISOR);
         analogWrite(BLUE_PANEL_LED, (PANEL_LOCK_LED_FULL_BRIGHTNESS * 4) / PANEL_LED_BRIGHTNESS_DIVISOR);

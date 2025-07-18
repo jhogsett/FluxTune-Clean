@@ -43,7 +43,7 @@ void SignalMeter::init()
 #ifndef NATIVE_BUILD
     // Initialize NeoPixel strip for both platforms
     if (!_led_strip) {
-        _led_strip = new Adafruit_NeoPixel(LED_COUNT, 12, NEO_GRB + NEO_KHZ800);
+        _led_strip = new Adafruit_NeoPixel(LED_COUNT, SIGNAL_METER_PIN, NEO_GRB + NEO_KHZ800);
         _led_strip->begin();
         _led_strip->clear();
         _led_strip->show();
