@@ -1,20 +1,11 @@
 #include "station_manager.h"
 #include "sim_numbers.h" // Example concrete station type
 
-// MEMORY OPTIMIZATION: Constructor that shares realizations array to eliminate duplicate arrays
-// REQUIREMENT: All array entries MUST be SimTransmitter-derived objects
-StationManager::StationManager(Realization* shared_stations[], int actual_station_count) 
-    : actual_station_count(actual_station_count) {
-    // Cast Realization* to SimTransmitter* (safe due to inheritance in station classes)
-    // All station classes inherit from both Realization and SimTransmitter
+StationManager::StationManager(SimTransmitter** station_ptrs, int station_count) 
+    : stations(station_ptrs), actual_station_count(station_count) {
     for (int i = 0; i < actual_station_count; ++i) {
-        stations[i] = static_cast<SimTransmitter*>(shared_stations[i]);
         stations[i]->setActive(false);
         stations[i]->set_station_state(DORMANT);
-    }
-    // Initialize remaining slots to nullptr (not accessed)
-    for (int i = actual_station_count; i < MAX_STATIONS; ++i) {
-        stations[i] = nullptr;
     }
     for (int i = 0; i < MAX_AD9833; ++i) {
         ad9833_assignment[i] = -1;
@@ -137,7 +128,7 @@ void StationManager::setupPipeline(uint32_t vfo_freq) {
     last_tuning_time = millis();
     tuning_direction = 0; // Start in stopped state
     
-    // Activate all valid stations with their natural frequencies
+    // Activate all stations with their natural frequencies
     for (int i = 0; i < actual_station_count; ++i) {
         // Start the station with its natural frequency (don't call reinitialize)
         stations[i]->begin(millis());
@@ -231,7 +222,7 @@ void StationManager::reallocateStations(uint32_t vfo_freq) {
         bool can_interrupt;
     };
     
-    StationDistance candidates[MAX_STATIONS];
+    StationDistance candidates[MAX_STATIONS];  // Keep MAX_STATIONS for array size since it's compile-time constant
     int candidate_count = 0;
     
     // Find stations that are outside the lookahead range
