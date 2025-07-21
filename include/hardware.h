@@ -10,28 +10,30 @@
 #define LAST_PANEL_LED 10
 #define WHITE_PANEL_LED 9   // Pin 9: White panel LED
 #define BLUE_PANEL_LED 10   // Pin 10: Blue panel LED
-#define PANEL_LOCK_LED_FULL_BRIGHTNESS 511
 
 // ============================================================================
 // DEVICE VARIANT CONFIGURATION
 // Comment/uncomment one of these to match your hardware variant:
 // ============================================================================
-#define DEVICE_VARIANT_GREEN_DISPLAY    // Original green display version
+// #define DEVICE_VARIANT_GREEN_DISPLAY    // Original green display version
 // #define DEVICE_VARIANT_RED_DISPLAY      // Red display version with dimmer LEDs
-// #define DEVICE_VARIANT_AMBER_DISPLAY      // Red display version with dimmer LEDs
+#define DEVICE_VARIANT_AMBER_DISPLAY      // Red display version with dimmer LEDs
 
 // Device-specific scaling factors
 #if defined(DEVICE_VARIANT_RED_DISPLAY)
     // Red display variant: LEDs are much brighter, scale down significantly
     #define SIGNAL_METER_BRIGHTNESS_DIVISOR 5      // Divide by 5 for red display
     #define PANEL_LED_BRIGHTNESS_DIVISOR 1         // Divide by 5 for red display
+    #define PANEL_LOCK_LED_FULL_BRIGHTNESS 511
 #elif defined(DEVICE_VARIANT_AMBER_DISPLAY)
     // Amber display variant: Brighter than RED
     #define SIGNAL_METER_BRIGHTNESS_DIVISOR 4      // No scaling for green display
     #define PANEL_LED_BRIGHTNESS_DIVISOR 1         // Divide by 2 for green display
+    #define PANEL_LOCK_LED_FULL_BRIGHTNESS 511
 #else // Green display variant (default): Original brightness
     #define SIGNAL_METER_BRIGHTNESS_DIVISOR 1      // No scaling for green display
     #define PANEL_LED_BRIGHTNESS_DIVISOR 1         // Divide by 2 for green display
+    #define PANEL_LOCK_LED_FULL_BRIGHTNESS 767
 #endif
 
 #endif
